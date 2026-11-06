@@ -106,6 +106,7 @@ interface ProjectSidebarProps {
   websiteUrl?: string | null
   dataLoading?: boolean
   searchParams: URLSearchParams
+  timezone?: string
   allowedToManage?: boolean
   isMobileOpen?: boolean
   onMobileClose?: () => void
@@ -334,6 +335,7 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
   websiteUrl,
   dataLoading,
   searchParams,
+  timezone,
   allowedToManage,
   isMobileOpen = false,
   onMobileClose,
@@ -355,6 +357,7 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
     selfhosted: isSelfhosted,
     embedded: isEmbedded,
     searchParams,
+    timezone,
     language: i18n.resolvedLanguage || i18n.language,
     theme,
   })
@@ -814,6 +817,7 @@ const MemoizedProjectSidebar = memo(ProjectSidebar, (prevProps, nextProps) => {
     prevProps.allowedToManage === nextProps.allowedToManage &&
     prevProps.isMobileOpen === nextProps.isMobileOpen &&
     prevProps.isEmbedded === nextProps.isEmbedded &&
+    prevProps.timezone === nextProps.timezone &&
     prevProps.className === nextProps.className &&
     prevProps.searchParams.toString() === nextProps.searchParams.toString() &&
     prevProps.tabs === nextProps.tabs &&

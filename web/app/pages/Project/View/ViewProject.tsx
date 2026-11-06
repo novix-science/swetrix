@@ -1326,6 +1326,7 @@ const ViewProjectContent = () => {
                 websiteUrl={null}
                 dataLoading={false}
                 searchParams={searchParams}
+                timezone={timezone}
                 allowedToManage={false}
                 isEmbedded={isEmbedded}
                 className='hidden md:flex'
@@ -1425,6 +1426,7 @@ const ViewProjectContent = () => {
                 websiteUrl={project.websiteUrl}
                 dataLoading={dataLoading}
                 searchParams={searchParams}
+                timezone={timezone}
                 allowedToManage={allowedToManage}
                 isEmbedded={isEmbedded}
                 className='hidden md:flex'
@@ -1441,6 +1443,7 @@ const ViewProjectContent = () => {
                     websiteUrl={project.websiteUrl}
                     dataLoading={dataLoading}
                     searchParams={searchParams}
+                    timezone={timezone}
                     allowedToManage={allowedToManage}
                     isEmbedded={isEmbedded}
                     isMobileOpen={isMobileSidebarOpen}
@@ -1513,6 +1516,7 @@ const ViewProjectContent = () => {
                           websiteUrl={project.websiteUrl}
                           dataLoading={dataLoading}
                           searchParams={searchParams}
+                          timezone={timezone}
                           allowedToManage={allowedToManage}
                           isEmbedded={isEmbedded}
                           className='pointer-events-auto z-20 hidden md:flex'
@@ -1529,6 +1533,7 @@ const ViewProjectContent = () => {
                             websiteUrl={project.websiteUrl}
                             dataLoading={dataLoading}
                             searchParams={searchParams}
+                            timezone={timezone}
                             allowedToManage={allowedToManage}
                             isEmbedded={isEmbedded}
                             isMobileOpen={isMobileSidebarOpen}
