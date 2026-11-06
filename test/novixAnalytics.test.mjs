@@ -69,3 +69,29 @@ test("uses the native dashboard timezone when the URL omits it or contains anoth
     );
   }
 });
+
+for (const [name, query, timeBucket] of [
+  ["an empty URL", "", "hour"],
+  ["a period without a bucket", "period=7d", "hour"],
+  ["an explicit compatible bucket", "period=7d&timeBucket=day", "day"],
+  [
+    "conflicting raw values",
+    "period=invalid&timeBucket=month&tb=year&timezone=UTC",
+    "hour",
+  ],
+]) {
+  test(`preserves resolved native period, bucket and timezone from ${name}`, () => {
+    const result = getNovixAnalyticsHref({
+      ...options,
+      searchParams: new URLSearchParams(query),
+      period: "7d",
+      timeBucket,
+      timezone: "Asia/Shanghai",
+    });
+    assert.ok(result);
+    const params = new URL(result, "https://analytics.example").searchParams;
+    assert.equal(params.get("period"), "7d");
+    assert.equal(params.get("timeBucket"), timeBucket);
+    assert.equal(params.get("timezone"), "Asia/Shanghai");
+  });
+}

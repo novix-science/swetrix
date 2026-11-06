@@ -1327,6 +1327,8 @@ const ViewProjectContent = () => {
                 dataLoading={false}
                 searchParams={searchParams}
                 timezone={timezone}
+                period={period}
+                timeBucket={timeBucket}
                 allowedToManage={false}
                 isEmbedded={isEmbedded}
                 className='hidden md:flex'
@@ -1427,6 +1429,8 @@ const ViewProjectContent = () => {
                 dataLoading={dataLoading}
                 searchParams={searchParams}
                 timezone={timezone}
+                period={period}
+                timeBucket={timeBucket}
                 allowedToManage={allowedToManage}
                 isEmbedded={isEmbedded}
                 className='hidden md:flex'
@@ -1444,6 +1448,8 @@ const ViewProjectContent = () => {
                     dataLoading={dataLoading}
                     searchParams={searchParams}
                     timezone={timezone}
+                    period={period}
+                    timeBucket={timeBucket}
                     allowedToManage={allowedToManage}
                     isEmbedded={isEmbedded}
                     isMobileOpen={isMobileSidebarOpen}
@@ -1517,6 +1523,8 @@ const ViewProjectContent = () => {
                           dataLoading={dataLoading}
                           searchParams={searchParams}
                           timezone={timezone}
+                          period={period}
+                          timeBucket={timeBucket}
                           allowedToManage={allowedToManage}
                           isEmbedded={isEmbedded}
                           className='pointer-events-auto z-20 hidden md:flex'
@@ -1534,6 +1542,8 @@ const ViewProjectContent = () => {
                             dataLoading={dataLoading}
                             searchParams={searchParams}
                             timezone={timezone}
+                            period={period}
+                            timeBucket={timeBucket}
                             allowedToManage={allowedToManage}
                             isEmbedded={isEmbedded}
                             isMobileOpen={isMobileSidebarOpen}

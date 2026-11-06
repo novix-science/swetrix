@@ -7,6 +7,8 @@ interface AnalyticsLinkOptions {
   language?: string
   theme?: string
   timezone?: string
+  period?: string
+  timeBucket?: string
 }
 
 export function getNovixAnalyticsHref(
@@ -42,6 +44,8 @@ export function getNovixAnalyticsHref(
     const value = options.searchParams.get(key)
     if (value) query.set(key, value)
   }
+  if (options.period) query.set('period', options.period)
+  if (options.timeBucket) query.set('timeBucket', options.timeBucket)
   if (options.timezone) query.set('timezone', options.timezone)
   query.set(
     'lang',
