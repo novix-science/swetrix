@@ -6,6 +6,7 @@ interface AnalyticsLinkOptions {
   searchParams: URLSearchParams
   language?: string
   theme?: string
+  timezone?: string
 }
 
 export function getNovixAnalyticsHref(
@@ -41,6 +42,7 @@ export function getNovixAnalyticsHref(
     const value = options.searchParams.get(key)
     if (value) query.set(key, value)
   }
+  if (options.timezone) query.set('timezone', options.timezone)
   query.set(
     'lang',
     options.language?.toLowerCase().startsWith('zh') ? 'zh' : 'en',
