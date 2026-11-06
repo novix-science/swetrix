@@ -7,6 +7,7 @@ import {
   GearIcon,
   XIcon,
   ListIcon,
+  ChartBarIcon,
 } from '@phosphor-icons/react'
 import React, {
   useState,
@@ -20,7 +21,9 @@ import { useTranslation } from 'react-i18next'
 import { Link } from '~/ui/Link'
 import { LinkProps } from 'react-router'
 
-import { PROJECT_TABS } from '~/lib/constants'
+import { PROJECT_TABS, isSelfhosted } from '~/lib/constants'
+import { useTheme } from '~/providers/ThemeProvider'
+import { getNovixAnalyticsHref } from '~/utils/novixAnalytics'
 import { Text } from '~/ui/Text'
 import Tooltip from '~/ui/Tooltip'
 import { cn } from '~/utils/generic'
@@ -341,7 +344,20 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
     () => getFaviconHost(websiteUrl || null),
     [websiteUrl],
   )
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
+  const { theme } = useTheme()
+  const novixAnalyticsHref = getNovixAnalyticsHref({
+    projectId,
+    enabledProjectIds:
+      typeof window === 'undefined'
+        ? process.env.NOVIX_ANALYTICS_PROJECT_IDS
+        : window.REMIX_ENV?.NOVIX_ANALYTICS_PROJECT_IDS,
+    selfhosted: isSelfhosted,
+    embedded: isEmbedded,
+    searchParams,
+    language: i18n.resolvedLanguage || i18n.language,
+    theme,
+  })
   const shouldCollapseByDefault = searchParams.get('collapsed') === 'true'
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (shouldCollapseByDefault) {
@@ -663,6 +679,28 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
       </div>
 
       <div className='flex flex-col gap-0.5 px-2 py-2'>
+        {novixAnalyticsHref ? (
+          <a
+            href={novixAnalyticsHref}
+            onClick={onMobileClose}
+            title={t('dashboard.novixAnalytics')}
+            aria-label={t('dashboard.novixAnalytics')}
+            className={cn(
+              'group flex w-full items-center rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
+              'text-gray-900 hover:bg-gray-100 dark:text-gray-50 dark:hover:bg-slate-900/60',
+              isCollapsed && !isMobileOpen ? 'justify-center' : 'gap-2.5',
+            )}
+          >
+            <ChartBarIcon
+              className='h-5 w-5 shrink-0 text-teal-500'
+              weight='duotone'
+              aria-hidden='true'
+            />
+            {!isCollapsed || isMobileOpen ? (
+              <span className='truncate'>{t('dashboard.novixAnalytics')}</span>
+            ) : null}
+          </a>
+        ) : null}
         {!isMobileOpen ? (
           <button
             type='button'

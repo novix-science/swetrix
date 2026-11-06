@@ -394,6 +394,7 @@ export async function loader({
     API_STAGING_URL: process.env.API_STAGING_URL,
     BASE_URL: process.env.BASE_URL,
     SELFHOSTED: process.env.__SELFHOSTED,
+    NOVIX_ANALYTICS_PROJECT_IDS: process.env.NOVIX_ANALYTICS_PROJECT_IDS,
     DISABLE_MARKETING_PAGES: process.env.DISABLE_MARKETING_PAGES,
     STAGING: process.env.STAGING,
     PADDLE_CLIENT_SIDE_TOKEN: process.env.PADDLE_CLIENT_SIDE_TOKEN,
