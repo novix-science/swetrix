@@ -1141,6 +1141,7 @@
     "productAnalytics": "产品分析",
     "novixAnalytics": "业务分析",
     "funnelsDesc": "漏斗可帮助你跟踪访客如何依次经过一系列页面和事件。\n利用漏斗发现注册、结账、新手引导或其他流程中的流失环节。\n<docs>阅读文档了解详情</docs>。",
+    "funnelsReadOnly": "你当前只有此项目的查看权限。请联系项目所有者或管理员创建漏斗。",
     "frontend": "前端",
     "backend": "后端",
     "network": "网络",

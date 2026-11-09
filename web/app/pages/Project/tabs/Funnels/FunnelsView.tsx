@@ -3,14 +3,14 @@ import _filter from 'lodash/filter'
 import _find from 'lodash/find'
 import _includes from 'lodash/includes'
 import _isEmpty from 'lodash/isEmpty'
-import { FunnelIcon, PlusIcon } from '@phosphor-icons/react'
+import { FunnelIcon } from '@phosphor-icons/react'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { useSearchParams, useFetcher } from 'react-router'
 import { toast } from 'sonner'
 
 import { useFunnelQuery } from '~/hooks/v2/useV2Queries'
-import { DOCS_URL, FUNNELS_PERIOD_PAIRS } from '~/lib/constants'
+import { DOCS_URL, FUNNELS_PERIOD_PAIRS, isSelfhosted } from '~/lib/constants'
 import type { AnalyticsFunnel, Funnel } from '~/lib/models/Project'
 import NewFunnel from '~/modals/NewFunnel'
 import FunnelsList, {
@@ -27,12 +27,10 @@ import {
   useProjectPassword,
 } from '~/providers/CurrentProjectProvider'
 import type { ProjectViewActionData } from '~/routes/projects.$id'
-import Button from '~/ui/Button'
-import { Link } from '~/ui/Link'
 import { Text } from '~/ui/Text'
-import routes from '~/utils/routes'
 
 import { SessionsDrawer } from '../Traffic/SessionsDrawer'
+import FunnelEmptyStateAction from './FunnelEmptyStateAction'
 
 interface FunnelsViewProps {
   tnMapping: Record<string, string>
@@ -307,20 +305,12 @@ const FunnelsView = ({ tnMapping }: FunnelsViewProps) => {
             />
           </Text>
           <div className='mt-6'>
-            {isAuthenticated && allowedToManage ? (
-              <Button size='lg' onClick={() => setIsNewFunnelOpened(true)}>
-                <PlusIcon className='mr-1.5 size-4' />
-                {t('dashboard.newFunnel')}
-              </Button>
-            ) : (
-              <Link
-                to={routes.signup}
-                aria-label={t('titles.signup')}
-                className='inline-flex items-center justify-center rounded-md border border-transparent bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
-              >
-                {t('header.startForFree')}
-              </Link>
-            )}
+            <FunnelEmptyStateAction
+              isAuthenticated={isAuthenticated}
+              allowedToManage={allowedToManage}
+              selfHosted={isSelfhosted}
+              onCreate={() => setIsNewFunnelOpened(true)}
+            />
           </div>
         </div>
       )}
