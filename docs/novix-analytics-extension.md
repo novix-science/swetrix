@@ -13,3 +13,15 @@ BFF 独立验证真实用户会话与私有项目权限。这里的菜单配置�
 覆盖检查命令为 `node --test test/novixAnalytics.test.mjs`、`npm run typecheck --prefix web`、`npm run build --prefix web` 和修改源码的 oxlint。这里只验证源码与构建，真实部署和菜单跳转验收在扩展服务与同域路由就绪后进行。
 
 本次 8 个 Node 测试、typecheck、build 均通过。三份修改源码的 oxlint 无错误，保留 ProjectSidebar 与 ViewProject 的三处原有 set-state-in-effect 警告；构建保留体积超过 500 kB 的 chunk 提示。
+
+## 2026-11-09 实际部署
+
+本次部署分支从当时实际运行的中文 commit `0ce3154b0c3a7d687afcec69200831aac3fff70d` 出发，仅带入入口适配提交，编译源码为 `a302a9545a9d176fb9f9946743d7f88699661e66`。重新执行的 8 项菜单测试、typecheck 和 build 通过。镜像 `novix/swetrix-fe:5.5.3-novix-analytics.2` 的实际 image ID 为 `sha256:74e65bf95337dbb19719a0d1efc355918a21bec9a15e0b7ef5532059e2a09cb3`，健康且零重启。保留原 HTTPS Express adapter，其他 API、ClickHouse、Redis、网关和独立 BFF 容器未被这次前端更新重建。
+
+`NOVIX_ANALYTICS_PROJECT_IDS` 仅设置测试项目 `3YB7MtPN7WXv`。真实 Chrome 私有项目会话刷新后出现“Novix 业务统计”，点击进入中文扩展页，继承 `period=7d`、`timeBucket=hour`、Asia/Shanghai、中文与浅色主题。页面显示真实产品使用、日/周留存、任务结果、资源账本及覆盖提示；近 30 天筛选也已通过实际 API 与页面验收。
+
+独立 BFF 的当前镜像为 `novix/business-analytics:20261109.2`，源码为 Novix monorepo `b7022c68197248b9df5f15997f506ca40f2e6d55`，完整 73 项测试通过。该版本将 task 容量扩到 50,000，并串行调度历史首次使用，保留两份报表并发和原时限。真实两份月度报告均为 200，约 8–11 秒，容器观测峰值约 139 MiB、限制 768 MiB、无 OOM。业务侧的 GCP 测试库与接口使用独立只读凭证；测试 API 不新增 DNS，通过内部 CA 校验现有 IP 的 HTTPS。正式 Novix 业务发布与正式数据库 SQL 未操作。
+
+对应源码包含本次菜单改动、现有 HTTPS adapter 与镜像构建说明：[下载源码](https://api-analytics.novix.science/source/swetrix-fe-5.5.3-novix-analytics.2-source.tar.gz)。归档 SHA256 为 `f38b80805f1e3e49272d4f5ef4e4f1ec4fee182ea2999a5cf986bd14e66eb6c3`，公开 `/source` 的前端元数据与运行镜像一致。升级时仍只需适配菜单、root loader 和 URL 桥接；业务取数和统计继续保留在独立扩展。
+
+浏览器验收已通过近 30 天控件查询和“刷新当前范围”读回：日期/筛选保留，快照更新，真实月度使用汇总一致。DevTools Console 为 0 条消息；Issues 区有 `frame.js:2` 的 Fenced Frame API 弃用提示，未改动该来源脚本。页面截图已记录在当前会话。旧数据缺少功能/身份/时间信息时按覆盖提示呈现，不伪造历史指标。
