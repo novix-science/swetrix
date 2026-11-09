@@ -18,6 +18,8 @@ BFF 独立验证真实用户会话与私有项目权限。这里的菜单配置�
 
 前端按 `web/Dockerfile` 构建，使用 OCI revision 标签对应源码 commit。现有部署继续通过只读绑定的 HTTPS Express adapter 启动，完整源码也保留在 `deploy/novix/frontend-server.mjs`。重建时把该文件放到 `/app/novix-frontend-server.mjs` 并用 `node /app/novix-frontend-server.mjs` 启动，保持已有 API_ORIGIN、BASE_URL、项目开关及 Docker 子网设置。该适配器只信任现有专用 Docker 子网的代理头。公开源码归档需覆盖本仓和此适配器。
 
+`npm run build` 最后执行样式一致性检查。web-only Docker 上下文没有仓库根 `.gitignore`，Tailwind 默认扫描会在 SSR 阶段再次扫描先前生成的客户端 bundle，造成两套样式哈希和 React hydration 错误。样式源用 `@source not` 明确排除 build、.react-router、public/build（[官方源扫描说明](https://tailwindcss.com/docs/detecting-classes-in-source-files#ignoring-specific-paths)）。同样的无 Git 构建上下文，修复前客户端为 C3pLiRmJ/BfunmWqH 两份、SSR 指向 BfunmWqH；修复后两端均只引用 C3pLiRmJ。线上 HTML/JS 的受限本地对照只统一 CSS 链接后也不再触发 hydration 报错，诊断服务已关闭。
+
 ## 2026-11-09 早期独立入口部署记录
 
 以下为原生页改造前的验收，不能作为原生页已经部署的证明；新的部署记录追加在末尾。

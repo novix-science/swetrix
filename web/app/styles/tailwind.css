@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* The web-only Docker context has no repository .gitignore. Keep generated
+   client bundles out of the later SSR scan so both builds emit the same CSS. */
+@source not '../../build';
+@source not '../../.react-router';
+@source not '../../public/build';
+
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 

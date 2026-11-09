@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
@@ -99,7 +99,13 @@ function FiltersForm({
     const items = choices.map(([value, label]) => ({ value, label }))
     const selected = items.find((item) => item.value === draft[key]) || {
       value: draft[key],
-      label: draft[key],
+      label:
+        key === 'feature'
+          ? draft[key]
+              .split('_')
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')
+          : draft[key],
     }
     return (
       <Select
@@ -202,6 +208,7 @@ function FiltersForm({
 }
 
 export default function BusinessView({ projectId }: { projectId: string }) {
+  const queryClient = useQueryClient()
   const { i18n } = useTranslation('common')
   const language = (i18n.resolvedLanguage || i18n.language).startsWith('zh')
     ? 'zh'
@@ -245,6 +252,16 @@ export default function BusinessView({ projectId }: { projectId: string }) {
       ),
   })
   const report = product.data || overview.data
+  // Keep catalog labels while a different date/filter query is loading,
+  // without retaining that query's old metrics in the displayed report.
+  const features =
+    product.data?.features ||
+    queryClient
+      .getQueriesData<ProductReport>({
+        queryKey: ['novix-business', projectId, 'product'],
+      })
+      .find(([, data]) => data?.features)?.[1]?.features ||
+    []
   const errorMessage = (error: Error) => {
     if (!(error instanceof ReportError)) return l('error_generic')
     return (
@@ -287,7 +304,7 @@ export default function BusinessView({ projectId }: { projectId: string }) {
       <FiltersForm
         key={JSON.stringify(filters)}
         initial={filters}
-        features={product.data?.features || []}
+        features={features}
         labels={labels}
         onApply={(next) =>
           setSearchParams(updateBusinessFilters(searchParams, next))
