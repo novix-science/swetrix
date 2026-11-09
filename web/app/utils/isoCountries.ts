@@ -11,9 +11,11 @@ countries.registerLocale({
   locale: 'en',
   countries: {
     ...countriesEn.countries,
-    TW: 'Taiwan',
+    TW: ['Taiwan, China', 'Taiwan'],
+    HK: ['Hong Kong, China', 'Hong Kong'],
+    MO: ['Macao, China', 'Macao'],
     US: 'United States',
-    CN: 'Mainland China',
+    CN: ['Mainland China', 'China'],
     RU: 'Russia',
   },
 })
@@ -38,7 +40,9 @@ countries.registerLocale({
   locale: 'zh',
   countries: {
     ...countriesZh.countries,
-    CN: '中国大陆',
+    CN: ['中国大陆', '中国'],
+    HK: ['中国香港', '香港'],
+    MO: ['中国澳门', '澳门'],
   },
 })
 
