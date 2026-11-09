@@ -33,3 +33,17 @@ BFF 独立验证真实用户会话与私有项目权限。这里的菜单配置�
 对应源码包含本次菜单改动、现有 HTTPS adapter 与镜像构建说明：[下载源码](https://api-analytics.novix.science/source/swetrix-fe-5.5.3-novix-analytics.2-source.tar.gz)。归档 SHA256 为 `f38b80805f1e3e49272d4f5ef4e4f1ec4fee182ea2999a5cf986bd14e66eb6c3`，公开 `/source` 的前端元数据与运行镜像一致。升级时仍只需适配菜单、root loader 和 URL 桥接；业务取数和统计继续保留在独立扩展。
 
 浏览器验收已通过近 30 天控件查询和“刷新当前范围”读回：日期/筛选保留，快照更新，真实月度使用汇总一致。DevTools Console 为 0 条消息；Issues 区有 `frame.js:2` 的 Fenced Frame API 弃用提示，未改动该来源脚本。页面截图已记录在当前会话。旧数据缺少功能/身份/时间信息时按覆盖提示呈现，不伪造历史指标。
+
+## 2026-11-09 原生业务分析部署
+
+Swetrix 按单一在线环境维护。本次从现有开发分支直接部署新建的 Swetrix 主机，不以 Novix 的共享测试分支作为发布来源。
+
+当前前端为 `novix/swetrix-fe:5.5.3-novix-analytics.4`，源码 `d87df6d103e70201ccc0ddc84e07069d26766c57`，实际 image ID `sha256:102dacf52d4e96257a72907dc49d2d6624919a6762074207daa8640db6b6ae41`。对应[完整源码](https://api-analytics.novix.science/source/swetrix-fe-5.5.3-novix-analytics.4-source.tar.gz)为 33,761,833 bytes，SHA256 `ffae917354c0ee70bcd795ac96683c07915ca29c141c7c7fc17fb24d376ca25e`，公开下载为 200，`/source` 元数据与实际镜像相符。
+
+独立 BFF 为 `novix/business-analytics:20261109.3`，源码来自 Novix monorepo `b497e3e6183bb71d5d4e5bef1f5abbae0cfd7629`，image ID `sha256:780d896d74b26aec9878e681d016a745636541985c1c1d2d57745afa129ba82a`。改动只将旧页面入口重定向原生标签页，业务统计与只读数据源保持原协议。
+
+7 项前端测试、74 项 BFF 测试、typecheck、构建和修改源码 lint 均通过；现有 ViewProject/ProjectSidebar 的三处 effect 警告未扩大。真正 web-only Docker 构建也通过样式一致性检查，线上 SSR 和浏览器均只引用 `tailwind-C3pLiRmJ.css`。修复版初次加载和连续切换日期没有新增控制台错误。
+
+实际 API 验证中，产品报告为 200（约 7.37 秒）、资源概览为 200（约 0.96 秒），全部 13 项功能字段保留；旧入口为 303，并保留原生自定义日期与业务筛选；匿名为 401、未绑定项目为 404。当前业务查询绑定仍只包含 Novix Staging 项目。前端、BFF、API、ClickHouse、Redis 健康且零重启，网关运行且零重启；本次最终前端更新未重建其他容器。未改动其他旧 ECS、Novix 正式环境发布或正式数据库。
+
+真实线上浏览器已验证原生菜单进入、过去七天→今天→昨天连续切换、Data Analysis 选择并应用、错误菜单往返，以及手动刷新。返回后仍保持昨天与功能条件；刷新完成，快照从 16:38 更新到 16:39，条件不变。修复版本验收范围内控制台新增 error 为 0，head 中 Tailwind stylesheet 只有一份。展示仍如实保留未知、待成熟与字段关联缺口。
