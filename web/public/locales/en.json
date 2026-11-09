@@ -3230,6 +3230,11 @@
       "editTitle": "Edit funnel",
       "name": "Funnel name",
       "steps": "Funnel steps",
+      "searchPages": "Search or enter a page path",
+      "searchEvents": "Search or enter an event name",
+      "suggestionsHint": "Choose from pages and events already collected for this project, or enter a new value manually.",
+      "suggestionsError": "Suggestions could not be loaded. You can still enter a value manually.",
+      "retry": "Try again",
       "addStep": "Add one more step"
     },
     "annotation": {

@@ -13,6 +13,8 @@ import Modal from '~/ui/Modal'
 import Select from '~/ui/Select'
 import { Text } from '~/ui/Text'
 
+import FunnelStepInput, { type FunnelStepType } from './FunnelStepInput'
+
 interface NewFunnelProps {
   onClose: () => void
   onSubmit: (name: string, steps: string[]) => Promise<void>
@@ -20,8 +22,6 @@ interface NewFunnelProps {
   loading: boolean
   funnel?: Funnel
 }
-
-type FunnelStepType = 'page' | 'event'
 
 interface FunnelStep {
   type: FunnelStepType
@@ -120,10 +120,14 @@ const NewFunnel = ({
           >
             {t('modals.funnels.steps')}
           </Text>
+          <Text as='p' size='xs' colour='secondary' className='mt-1 mb-2'>
+            {t('modals.funnels.suggestionsHint')}
+          </Text>
           {_map(steps, (step, index) => (
             <div key={index} className='mt-1 flex items-center space-x-2'>
               <Select
-                className={`!ml-0 w-36${!allowedToManage ? 'pointer-events-none opacity-60' : ''}`}
+                className='!ml-0 w-36'
+                disabled={!allowedToManage}
                 items={[
                   { key: 'page', label: t('dashboard.page') },
                   { key: 'event', label: t('dashboard.event') },
@@ -135,6 +139,7 @@ const NewFunnel = ({
                   newSteps[index] = {
                     ...newSteps[index],
                     type: item.key as FunnelStepType,
+                    value: item.key === step.type ? step.value : '',
                   }
                   setSteps(newSteps)
                 }}
@@ -149,18 +154,19 @@ const NewFunnel = ({
                     : { key: 'event', label: t('dashboard.event') }
                 }
               />
-              <Input
-                className='!ml-0 w-full'
+              <FunnelStepInput
+                key={`${index}:${step.type}`}
+                type={step.type}
                 value={step.value}
-                placeholder={step.type === 'page' ? '/pricing' : 'Registration'}
-                onChange={(e) => {
+                onChange={(value) => {
                   const newSteps = [...steps]
                   newSteps[index] = {
                     ...newSteps[index],
-                    value: e.target.value,
+                    value,
                   }
                   setSteps(newSteps)
                 }}
+                active={isOpened}
                 disabled={!allowedToManage}
               />
               {steps.length > MIN_FUNNEL_STEPS && allowedToManage ? (

@@ -3227,6 +3227,11 @@
       "editTitle": "编辑漏斗",
       "name": "漏斗名称",
       "steps": "漏斗步骤",
+      "searchPages": "搜索或输入页面路径",
+      "searchEvents": "搜索或输入事件名称",
+      "suggestionsHint": "可选择当前项目已采集的页面和事件，也可手动输入尚未上报的新值。",
+      "suggestionsError": "暂时无法加载候选项，仍可手动输入。",
+      "retry": "重试",
       "addStep": "再添加一步"
     },
     "annotation": {
