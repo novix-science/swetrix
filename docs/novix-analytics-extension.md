@@ -57,3 +57,17 @@ Swetrix 按单一在线环境维护。本次从现有开发分支直接部署新
 正式菜单在“产品分析”分组显示“业务分析”，页面明确标注“正式数据”，继续复用原生日期和筛选控件。当前使用独立只读业务接口与本机 ClickHouse 聚合，不启用新增 KMS 服务鉴权或自动轮换。历史字段缺失、待成熟留存和覆盖不足继续如实显示，未补写历史业务数据。详细部署和验收证据由 Novix monorepo 的 `docs/validation/2026-11-09-analytics-consolidation.md` 维护。
 
 真实浏览器验收包括正式七日报告、切换今天、选择 Auto Pilot 并查询，以及整页刷新保留日期和功能。最终正式七日总览正常显示；1280×720 视口下已留存截图，修复后验收期间控制台新增 error/warn 均为 0。正式资源概览的任务数与额度消耗另与业务库只读查询核对一致。
+
+## 2026-11-09 地域名称与性能优化
+
+共用 `web/app/utils/isoCountries.ts` 将 CN 的中文、英文名称设为“中国大陆”“Mainland China”，使地图、列表和过滤项一致。两种语言的实际地图提示已验收，并恢复中文；本地正反向查找、typecheck、build、样式清单与修改文件 lint 通过。
+
+前端镜像 `novix/swetrix-fe:5.5.3-novix-analytics.5`，源码 `053bb76adcca435fb13f18ea758cde3d2d9eb88a`，image ID `sha256:bf4793fb1ad546d78fe224a92227be9e8e48f77c3c2f45e84f451beff3d543be`。[完整源码](https://api-analytics.novix.science/source/swetrix-fe-5.5.3-novix-analytics.5-source.tar.gz)为 33,761,105 bytes，SHA256 `84a014dcb9f9c791c1a86f2d7b0ef443843d7a0b69e531e2c69d46f1d99c3a7c`。菜单项目配置保持现有两环境绑定。
+
+独立 BFF 更新为 `novix/business-analytics:20261109.6`，源码 `e4a8269f597c93981eee632fe3849145bd32b1ca`。历史首用每批 400 个账号、两个连续工作单元，业务读取共用最多两个名额；96 项回归通过，原时限与完整历史保留。当前同批生产数据对比，七天/四周/自定义完整报表从约 11.1–11.4 秒降至 5.1–5.7 秒，结果一致。详细验证见 Novix monorepo 的 `docs/validation/2026-11-09-analytics-performance-geography.md`。
+
+随后按用户要求补齐“中国香港 / Hong Kong, China”“中国澳门 / Macao, China”；中文台湾保留原有“中国台湾省”，英文补齐为 Taiwan, China。旧名称仍作为别名支持反向查找，地图、列表和过滤项共用优先名称。
+
+当前前端为 `novix/swetrix-fe:5.5.3-novix-analytics.6`，源码 `200beb9b178059ba26cb6fe58e9ccde5748ac2f0`，image ID `sha256:15e893a6c5a0e9d641ec2fd9174c73d48125cb9ea6f05488c01a98d83e186113`。[完整源码](https://api-analytics.novix.science/source/swetrix-fe-5.5.3-novix-analytics.6-source.tar.gz)为 33,760,749 bytes，SHA256 `158b31b5481edca8240c50d66d8711cfb247a04e509e28bf6dc061db65a4e5ba`。名称与旧别名、typecheck、build、样式清单及修改文件 lint 通过；当前容器 healthy、零重启，其他容器 ID 保持不变。
+
+公开完整源码实际下载及校验通过。真实浏览器确认了四地八个中英文名称，随后恢复中文、清除地区筛选并回到正常显示的正式业务报告。首屏 SSR 只输出壳时，不以 HTML 是否包含地区名称判断该客户端功能是否生效。
