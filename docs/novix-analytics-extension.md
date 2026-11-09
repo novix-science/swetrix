@@ -71,3 +71,15 @@ Swetrix 按单一在线环境维护。本次从现有开发分支直接部署新
 当前前端为 `novix/swetrix-fe:5.5.3-novix-analytics.6`，源码 `200beb9b178059ba26cb6fe58e9ccde5748ac2f0`，image ID `sha256:15e893a6c5a0e9d641ec2fd9174c73d48125cb9ea6f05488c01a98d83e186113`。[完整源码](https://api-analytics.novix.science/source/swetrix-fe-5.5.3-novix-analytics.6-source.tar.gz)为 33,760,749 bytes，SHA256 `158b31b5481edca8240c50d66d8711cfb247a04e509e28bf6dc061db65a4e5ba`。名称与旧别名、typecheck、build、样式清单及修改文件 lint 通过；当前容器 healthy、零重启，其他容器 ID 保持不变。
 
 公开完整源码实际下载及校验通过。真实浏览器确认了四地八个中英文名称，随后恢复中文、清除地区筛选并回到正常显示的正式业务报告。首屏 SSR 只输出壳时，不以 HTML 是否包含地区名称判断该客户端功能是否生效。
+
+## 2026-11-09 漏斗权限与空状态修复
+
+社区版现有后端支持漏斗的新建、编辑、删除和转化查询。此次“免费开始”跳转 `/zh/signup` 后出现 404，源于已登录的项目 viewer 被前端误导到云端注册入口；本机注册原本关闭。按用户明确确认，仅将既有看板账号在 Novix Production、Novix Staging 两个私有项目中的角色改为 admin，并通过项目 API 读回验证。项目保持私有，未修改 Novix 业务数据库或全局云权限。[官方权限说明](https://swetrix.com/docs/analytics-dashboard/funnels)同样要求项目 owner/admin 才能管理漏斗，viewer 只能查看。
+
+`FunnelEmptyStateAction` 按实际身份显示操作：管理员新建漏斗、已登录 viewer 显示中英文只读说明、自托管匿名访问进入本机登录、云端匿名访问保留原注册入口。后端管理权限检查保持生效，自托管注册仍关闭。升级官方版本时需保留此空状态组件、父页接入及两项语言文案。
+
+前端镜像为 `novix/swetrix-fe:5.5.3-novix-analytics.7`，源码 `056151d08ff385796a1c19ac0e0a76b3f853260f`，实际 image ID 为 `sha256:c846d34eec049ccb889225b11e3116cc84befffa6a2e9891533d8e0b1ac21eaf`。[完整源码](https://api-analytics.novix.science/source/swetrix-fe-5.5.3-novix-analytics.7-source.tar.gz)为 33,763,476 bytes，SHA256 `63835d0c93cca2830413dbe4bed63745f546b07c52aecc0c42b88d5aaf8fae12`，公开下载和 `/source` 元数据已核对。前端 healthy、零重启，其他服务容器 ID 保持不变。独立 BFF 和社区版 API 沿用现有版本。
+
+本地 14 项测试、typecheck、build、样式一致性检查通过，涵盖实际中英文权限文案及本机登录链接；修改源码的 oxlint 退出码为 0，FunnelsView 未改动区域仍有 hooks 警告。真实浏览器在 Staging 新建临时两步漏斗 `/` → `/chat`，随后编辑名称并整页刷新读回；实际转化查询为 200，图表正常。临时漏斗按精确 ID 和名称校验后清理，保留其他漏斗。Production 的“新建漏斗”和创建表单也已验证，没有在正式项目保存测试漏斗。
+
+单个前端容器切换期间，验收表单曾收到一次 502；新版本健康后重新编辑、刷新与查询全部通过。最终浏览器验收区间新增 error/warn 均为 0，页面停留在 Production 的正常漏斗入口。
