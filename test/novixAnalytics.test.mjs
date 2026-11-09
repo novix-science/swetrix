@@ -1,97 +1,98 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { getNovixAnalyticsHref } from "../web/app/utils/novixAnalytics.ts";
+import {
+  BUSINESS_FILTER_DEFAULTS,
+  NOVIX_BUSINESS_TAB,
+  businessQueryParams,
+  isNovixAnalyticsEnabled,
+  readBusinessFilters,
+  updateBusinessFilters,
+} from "../web/app/utils/novixAnalytics.ts";
 
 const options = {
   projectId: "ABCDEFGHIJKL",
   enabledProjectIds: "123456789012, ABCDEFGHIJKL",
   selfhosted: true,
-  searchParams: new URLSearchParams(
-    "period=7d&timezone=Asia%2FShanghai&tab=errors&profileId=private&compare=previous",
-  ),
-  language: "zh-CN",
-  theme: "dark",
 };
 
-test("links only enabled selfhosted project views and forwards supported date context", () => {
-  const result = getNovixAnalyticsHref(options);
-  assert.ok(result);
-  const url = new URL(result, "https://analytics.example");
-  assert.equal(url.origin, "https://analytics.example");
-  assert.equal(url.pathname, "/novix/projects/ABCDEFGHIJKL/business");
-  assert.equal(url.searchParams.get("lang"), "zh");
-  assert.equal(url.searchParams.get("theme"), "dark");
-  assert.equal(url.searchParams.get("period"), "7d");
-  assert.equal(url.searchParams.get("timezone"), "Asia/Shanghai");
-  assert.equal(url.searchParams.get("compare"), "previous");
-  assert.equal(url.searchParams.has("tab"), false);
-  assert.equal(url.searchParams.has("profileId"), false);
-});
-
-test("keeps unconfigured, embedded, hosted and invalid project routes hidden", () => {
+test("business is a native tab enabled only for configured selfhosted projects", () => {
+  assert.equal(NOVIX_BUSINESS_TAB, "novixBusiness");
+  assert.equal(isNovixAnalyticsEnabled(options), true);
   for (const change of [
     { enabledProjectIds: undefined },
     { enabledProjectIds: "otherproject" },
     { embedded: true },
     { selfhosted: false },
     { projectId: "../admin" },
-  ])
-    assert.equal(getNovixAnalyticsHref({ ...options, ...change }), undefined);
-});
-
-test("uses the English fallback and retains an absolute date range", () => {
-  const result = getNovixAnalyticsHref({
-    ...options,
-    language: "ja",
-    theme: "system",
-    searchParams: new URLSearchParams(
-      "startInclusive=2026-11-01T00%3A00%3A00Z&endExclusive=2026-11-02T00%3A00%3A00Z",
-    ),
-  });
-  assert.ok(result);
-  const query = new URL(result, "https://analytics.example").searchParams;
-  assert.equal(query.get("lang"), "en");
-  assert.equal(query.has("theme"), false);
-  assert.equal(query.get("startInclusive"), "2026-11-01T00:00:00Z");
-});
-
-test("uses the native dashboard timezone when the URL omits it or contains another zone", () => {
-  for (const query of ["period=7d", "period=7d&timezone=UTC"]) {
-    const result = getNovixAnalyticsHref({
-      ...options,
-      timezone: "America/New_York",
-      searchParams: new URLSearchParams(query),
-    });
-    assert.ok(result);
-    assert.equal(
-      new URL(result, "https://analytics.example").searchParams.get("timezone"),
-      "America/New_York",
-    );
+  ]) {
+    assert.equal(isNovixAnalyticsEnabled({ ...options, ...change }), false);
   }
 });
 
-for (const [name, query, timeBucket] of [
-  ["an empty URL", "", "hour"],
-  ["a period without a bucket", "period=7d", "hour"],
-  ["an explicit compatible bucket", "period=7d&timeBucket=day", "day"],
-  [
-    "conflicting raw values",
-    "period=invalid&timeBucket=month&tb=year&timezone=UTC",
-    "hour",
-  ],
-]) {
-  test(`preserves resolved native period, bucket and timezone from ${name}`, () => {
-    const result = getNovixAnalyticsHref({
-      ...options,
-      searchParams: new URLSearchParams(query),
+test("native effective period, bucket and timezone override absent or conflicting URL values", () => {
+  for (const input of ["", "period=7d", "period=12M&timeBucket=day&timezone=UTC"]) {
+    const result = businessQueryParams({
+      searchParams: new URLSearchParams(input),
       period: "7d",
-      timeBucket,
+      timeBucket: "hour",
       timezone: "Asia/Shanghai",
     });
-    assert.ok(result);
-    const params = new URL(result, "https://analytics.example").searchParams;
-    assert.equal(params.get("period"), "7d");
-    assert.equal(params.get("timeBucket"), timeBucket);
-    assert.equal(params.get("timezone"), "Asia/Shanghai");
+    assert.equal(result.get("period"), "7d");
+    assert.equal(result.get("timeBucket"), "hour");
+    assert.equal(result.get("timezone"), "Asia/Shanghai");
+  }
+});
+
+test("custom bounds are preserved exactly while unrelated native filters stay out of BFF queries", () => {
+  const input = new URLSearchParams(
+    "tab=novixBusiness&profileId=private&compare=previous&filters=secret",
+  );
+  input.set("from", "2026-11-01T00:00:00.000Z");
+  input.set("to", "2026-11-02T23:59:59.999Z");
+  input.set("novix_feature", "data_analysis");
+  input.set("novix_internalTraffic", "external");
+  const result = businessQueryParams({
+    searchParams: input,
+    period: "custom",
+    timeBucket: "hour",
+    timezone: "Asia/Shanghai",
   });
-}
+  assert.equal(result.get("from"), input.get("from"));
+  assert.equal(result.get("to"), input.get("to"));
+  assert.equal(result.get("feature"), "data_analysis");
+  assert.equal(result.get("internalTraffic"), "external");
+  for (const key of ["tab", "profileId", "filters", "compare", "novix_feature"])
+    assert.equal(result.has(key), false);
+});
+
+test("business filters round trip without replacing dates or native tab state", () => {
+  const input = new URLSearchParams(
+    "tab=novixBusiness&period=7d&timeBucket=hour&filters=native&novix_feature=old",
+  );
+  const filters = {
+    ...BUSINESS_FILTER_DEFAULTS,
+    feature: "draw_plot",
+    internalTraffic: "all",
+    mode: "deep",
+    computeType: "gpu",
+    device: "desktop",
+    userType: "new",
+    version: "v2",
+    attribution: "first",
+    source: "A&B",
+    medium: "link",
+    campaign: "<launch>",
+  };
+  const result = updateBusinessFilters(input, filters);
+  assert.deepEqual(readBusinessFilters(result), filters);
+  assert.equal(result.get("filters"), "native");
+  assert.equal(result.get("period"), "7d");
+  assert.equal(result.get("tab"), NOVIX_BUSINESS_TAB);
+  assert.equal(input.get("novix_feature"), "old");
+  const reset = updateBusinessFilters(result, { ...BUSINESS_FILTER_DEFAULTS });
+  assert.equal(
+    [...reset.keys()].some((key) => key.startsWith("novix_")),
+    false,
+  );
+  assert.deepEqual(readBusinessFilters(reset), BUSINESS_FILTER_DEFAULTS);
+});

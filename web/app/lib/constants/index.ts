@@ -513,6 +513,7 @@ export const FUNNELS_PERIOD_PAIRS = [
 ]
 
 const SELFHOSTED_PROJECT_TABS = {
+  novixBusiness: 'novixBusiness',
   traffic: 'traffic',
   performance: 'performance',
   seo: 'seo',
@@ -529,6 +530,7 @@ const SELFHOSTED_PROJECT_TABS = {
 } as const
 
 const PRODUCTION_PROJECT_TABS = {
+  novixBusiness: 'novixBusiness',
   traffic: 'traffic',
   performance: 'performance',
   seo: 'seo',

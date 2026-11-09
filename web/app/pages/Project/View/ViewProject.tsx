@@ -81,6 +81,7 @@ import Dropdown from '~/ui/Dropdown'
 import Flag from '~/ui/Flag'
 import Loader from '~/ui/Loader'
 import { getItem, setItem } from '~/utils/localstorage'
+import { isNovixAnalyticsEnabled } from '~/utils/novixAnalytics'
 
 import {
   useCurrentProject,
@@ -131,6 +132,7 @@ const ReplaysView = lazy(() => import('../tabs/Replays/ReplaysView'))
 const SessionsView = lazy(() => import('../tabs/Sessions/SessionsView'))
 const SEOView = lazy(() => import('../tabs/SEO/SEOView'))
 const TrafficView = lazy(() => import('../tabs/Traffic/TrafficView'))
+const BusinessView = lazy(() => import('../tabs/Business/BusinessView'))
 
 interface ViewProjectContextType {
   timezone: string
@@ -354,6 +356,15 @@ const ViewProjectContent = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const isEmbedded = searchParams.get('embedded') === 'true'
+  const businessEnabled = isNovixAnalyticsEnabled({
+    projectId: id,
+    selfhosted: isSelfhosted,
+    embedded: isEmbedded,
+    enabledProjectIds:
+      typeof window === 'undefined'
+        ? process.env.NOVIX_ANALYTICS_PROJECT_IDS
+        : window.REMIX_ENV?.NOVIX_ANALYTICS_PROJECT_IDS,
+  })
   const projectQueryTabs = useMemo(() => {
     const tabs = searchParams.get('tabs')
 
@@ -392,12 +403,15 @@ const ViewProjectContent = () => {
   const activeTab = useMemo(() => {
     const tab = searchParams.get('tab') as keyof typeof PROJECT_TABS
 
-    if (tab in PROJECT_TABS) {
+    if (
+      tab in PROJECT_TABS &&
+      (tab !== PROJECT_TABS.novixBusiness || businessEnabled)
+    ) {
       return tab
     }
 
     return PROJECT_TABS.traffic
-  }, [searchParams])
+  }, [searchParams, businessEnabled])
   const projectViewFilterOptions = useMemo(
     () => getProjectViewFilterOptions(activeTab),
     [activeTab],
@@ -755,6 +769,15 @@ const ViewProjectContent = () => {
         label: t('dashboard.performance'),
         icon: GaugeIcon,
       },
+      ...(businessEnabled
+        ? [
+            {
+              id: PROJECT_TABS.novixBusiness,
+              label: t('dashboard.novixAnalytics'),
+              icon: ChartBarIcon,
+            },
+          ]
+        : []),
       {
         id: PROJECT_TABS.profiles,
         label: t('dashboard.profiles'),
@@ -836,7 +859,7 @@ const ViewProjectContent = () => {
     }
 
     return newTabs
-  }, [t, projectQueryTabs, allowedToManage])
+  }, [t, projectQueryTabs, allowedToManage, businessEnabled])
 
   const activeTabLabel = useMemo(
     () => _find(tabs, (tab) => tab.id === activeTab)?.label,
@@ -932,6 +955,13 @@ const ViewProjectContent = () => {
 
       if (V2_TABS.has(activeTab)) {
         await queryClient.invalidateQueries({ queryKey: ['v2', id] })
+        return
+      }
+
+      if (activeTab === PROJECT_TABS.novixBusiness) {
+        await queryClient.invalidateQueries({
+          queryKey: ['novix-business', id],
+        })
         return
       }
 
@@ -1326,9 +1356,6 @@ const ViewProjectContent = () => {
                 websiteUrl={null}
                 dataLoading={false}
                 searchParams={searchParams}
-                timezone={timezone}
-                period={period}
-                timeBucket={timeBucket}
                 allowedToManage={false}
                 isEmbedded={isEmbedded}
                 className='hidden md:flex'
@@ -1428,9 +1455,6 @@ const ViewProjectContent = () => {
                 websiteUrl={project.websiteUrl}
                 dataLoading={dataLoading}
                 searchParams={searchParams}
-                timezone={timezone}
-                period={period}
-                timeBucket={timeBucket}
                 allowedToManage={allowedToManage}
                 isEmbedded={isEmbedded}
                 className='hidden md:flex'
@@ -1447,9 +1471,6 @@ const ViewProjectContent = () => {
                     websiteUrl={project.websiteUrl}
                     dataLoading={dataLoading}
                     searchParams={searchParams}
-                    timezone={timezone}
-                    period={period}
-                    timeBucket={timeBucket}
                     allowedToManage={allowedToManage}
                     isEmbedded={isEmbedded}
                     isMobileOpen={isMobileSidebarOpen}
@@ -1522,9 +1543,6 @@ const ViewProjectContent = () => {
                           websiteUrl={project.websiteUrl}
                           dataLoading={dataLoading}
                           searchParams={searchParams}
-                          timezone={timezone}
-                          period={period}
-                          timeBucket={timeBucket}
                           allowedToManage={allowedToManage}
                           isEmbedded={isEmbedded}
                           className='pointer-events-auto z-20 hidden md:flex'
@@ -1541,9 +1559,6 @@ const ViewProjectContent = () => {
                             websiteUrl={project.websiteUrl}
                             dataLoading={dataLoading}
                             searchParams={searchParams}
-                            timezone={timezone}
-                            period={period}
-                            timeBucket={timeBucket}
                             allowedToManage={allowedToManage}
                             isEmbedded={isEmbedded}
                             isMobileOpen={isMobileSidebarOpen}
@@ -1581,6 +1596,10 @@ const ViewProjectContent = () => {
                           >
                             {activeTab === PROJECT_TABS.ai ? (
                               <AskAIView projectId={id} />
+                            ) : null}
+                            {activeTab === PROJECT_TABS.novixBusiness &&
+                            businessEnabled ? (
+                              <BusinessView projectId={id} />
                             ) : null}
                             {activeTab === PROJECT_TABS.traffic ? (
                               <TrafficView

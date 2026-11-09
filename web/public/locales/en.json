@@ -1139,7 +1139,7 @@
     "refunds": "Refunds",
     "webAnalytics": "Web analytics",
     "productAnalytics": "Product analytics",
-    "novixAnalytics": "Novix business analytics",
+    "novixAnalytics": "Business analytics",
     "funnelsDesc": "Funnels help you track how visitors move through a sequence of pages and events.\nUse them to spot drop-offs in sign-up, checkout, onboarding, or any other flow.\n<docs>Learn more in the docs</docs>.",
     "frontend": "Frontend",
     "backend": "Backend",

@@ -31,6 +31,7 @@ interface DashboardHeaderProps {
   showSearchButton?: boolean
   showPeriodSelector?: boolean
   hideTimeBucket?: boolean
+  showComparison?: boolean
   timeBucketSelectorItems?: TBPeriodPairsProps[]
 
   // Back button link (when provided, shows a back button on the far left)
@@ -55,6 +56,7 @@ const DashboardHeader = ({
   showSearchButton = true,
   showPeriodSelector = true,
   hideTimeBucket = false,
+  showComparison = true,
   timeBucketSelectorItems: customTimeBucketSelectorItems,
   backLink,
   backButtonLabel,
@@ -94,7 +96,11 @@ const DashboardHeader = ({
   } = useTranslation('common')
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const timeBucketSelectorItems = customTimeBucketSelectorItems || periodPairs
+  const timeBucketSelectorItems = (
+    customTimeBucketSelectorItems || periodPairs
+  ).filter(
+    (pair) => showComparison || pair.period !== PERIOD_PAIRS_COMPARE.COMPARE,
+  )
   const activeDropdownLabelCompare = _find(
     periodPairsCompare,
     (p) => p.period === activePeriodCompare,
@@ -258,7 +264,7 @@ const DashboardHeader = ({
             />
           </div>
         ) : null}
-        {isActiveCompare ? (
+        {isActiveCompare && showComparison ? (
           <>
             <div className='text-md mx-2 font-medium whitespace-pre-line text-gray-600 dark:text-gray-200'>
               vs

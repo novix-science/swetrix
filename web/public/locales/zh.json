@@ -1139,7 +1139,7 @@
     "refunds": "退款",
     "webAnalytics": "网站分析",
     "productAnalytics": "产品分析",
-    "novixAnalytics": "Novix 业务统计",
+    "novixAnalytics": "业务分析",
     "funnelsDesc": "漏斗可帮助你跟踪访客如何依次经过一系列页面和事件。\n利用漏斗发现注册、结账、新手引导或其他流程中的流失环节。\n<docs>阅读文档了解详情</docs>。",
     "frontend": "前端",
     "backend": "后端",

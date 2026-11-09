@@ -336,6 +336,7 @@ export const meta: MetaFunction<typeof loader> = ({
     | 'settings'
   const seoTabId = !isSelfhosted ? PROJECT_TABS.seo : null
   const tabNames: Record<string, string> = {
+    [PROJECT_TABS.novixBusiness]: t('dashboard.novixAnalytics'),
     [PROJECT_TABS.traffic]: t('dashboard.traffic'),
     [PROJECT_TABS.performance]: t('dashboard.performance'),
     ...(seoTabId ? { [seoTabId]: t('project.seo.title') } : {}),

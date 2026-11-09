@@ -7,7 +7,6 @@ import {
   GearIcon,
   XIcon,
   ListIcon,
-  ChartBarIcon,
 } from '@phosphor-icons/react'
 import React, {
   useState,
@@ -21,9 +20,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from '~/ui/Link'
 import { LinkProps } from 'react-router'
 
-import { PROJECT_TABS, isSelfhosted } from '~/lib/constants'
-import { useTheme } from '~/providers/ThemeProvider'
-import { getNovixAnalyticsHref } from '~/utils/novixAnalytics'
+import { PROJECT_TABS } from '~/lib/constants'
 import { Text } from '~/ui/Text'
 import Tooltip from '~/ui/Tooltip'
 import { cn } from '~/utils/generic'
@@ -78,6 +75,7 @@ const ICON_COLORS: Record<string, string> = {
   goals: 'text-purple-500',
   experiments: 'text-pink-500',
   featureFlags: 'text-orange-500',
+  novixBusiness: 'text-teal-500',
   // CAPTCHA
   captcha: 'text-emerald-500',
   // Settings
@@ -106,9 +104,6 @@ interface ProjectSidebarProps {
   websiteUrl?: string | null
   dataLoading?: boolean
   searchParams: URLSearchParams
-  timezone?: string
-  period: string
-  timeBucket: string
   allowedToManage?: boolean
   isMobileOpen?: boolean
   onMobileClose?: () => void
@@ -337,9 +332,6 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
   websiteUrl,
   dataLoading,
   searchParams,
-  timezone,
-  period,
-  timeBucket,
   allowedToManage,
   isMobileOpen = false,
   onMobileClose,
@@ -350,23 +342,7 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
     () => getFaviconHost(websiteUrl || null),
     [websiteUrl],
   )
-  const { t, i18n } = useTranslation('common')
-  const { theme } = useTheme()
-  const novixAnalyticsHref = getNovixAnalyticsHref({
-    projectId,
-    enabledProjectIds:
-      typeof window === 'undefined'
-        ? process.env.NOVIX_ANALYTICS_PROJECT_IDS
-        : window.REMIX_ENV?.NOVIX_ANALYTICS_PROJECT_IDS,
-    selfhosted: isSelfhosted,
-    embedded: isEmbedded,
-    searchParams,
-    timezone,
-    period,
-    timeBucket,
-    language: i18n.resolvedLanguage || i18n.language,
-    theme,
-  })
+  const { t } = useTranslation('common')
   const shouldCollapseByDefault = searchParams.get('collapsed') === 'true'
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (shouldCollapseByDefault) {
@@ -465,6 +441,7 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
 
     const productAnalyticsTabs = tabs.filter((tab) =>
       [
+        PROJECT_TABS.novixBusiness,
         PROJECT_TABS.profiles,
         PROJECT_TABS.sessions,
         PROJECT_TABS.replays,
@@ -688,28 +665,6 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
       </div>
 
       <div className='flex flex-col gap-0.5 px-2 py-2'>
-        {novixAnalyticsHref ? (
-          <a
-            href={novixAnalyticsHref}
-            onClick={onMobileClose}
-            title={t('dashboard.novixAnalytics')}
-            aria-label={t('dashboard.novixAnalytics')}
-            className={cn(
-              'group flex w-full items-center rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
-              'text-gray-900 hover:bg-gray-100 dark:text-gray-50 dark:hover:bg-slate-900/60',
-              isCollapsed && !isMobileOpen ? 'justify-center' : 'gap-2.5',
-            )}
-          >
-            <ChartBarIcon
-              className='h-5 w-5 shrink-0 text-teal-500'
-              weight='duotone'
-              aria-hidden='true'
-            />
-            {!isCollapsed || isMobileOpen ? (
-              <span className='truncate'>{t('dashboard.novixAnalytics')}</span>
-            ) : null}
-          </a>
-        ) : null}
         {!isMobileOpen ? (
           <button
             type='button'
@@ -823,9 +778,6 @@ const MemoizedProjectSidebar = memo(ProjectSidebar, (prevProps, nextProps) => {
     prevProps.allowedToManage === nextProps.allowedToManage &&
     prevProps.isMobileOpen === nextProps.isMobileOpen &&
     prevProps.isEmbedded === nextProps.isEmbedded &&
-    prevProps.timezone === nextProps.timezone &&
-    prevProps.period === nextProps.period &&
-    prevProps.timeBucket === nextProps.timeBucket &&
     prevProps.className === nextProps.className &&
     prevProps.searchParams.toString() === nextProps.searchParams.toString() &&
     prevProps.tabs === nextProps.tabs &&

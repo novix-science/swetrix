@@ -1,20 +1,26 @@
-# Novix 独立统计入口
+# Novix 原生业务分析
 
 自托管前端可设置 `NOVIX_ANALYTICS_PROJECT_IDS`，用逗号分隔启用业务统计入口的项目 ID。默认空值，配置应与独立 BFF 的项目绑定一致。
 
-入口在项目侧栏展示“Novix 业务统计”，使用普通同域导航进入 `/novix/projects/{id}/business`。日期、时区、比较标记、当前语言与主题会随链接传递。period、timeBucket 和 timezone 使用原生看板实际解析后的值，并覆盖 URL 中缺失或冲突的参数；默认 `7d/hour` 也会明确传递。时区使用原生生效的账号时区或默认值。桌面、移动及加载态的五处入口共用该规则，memo 比较包含这三个值。原生 Swetrix 的用户画像等筛选由独立页面自己的筛选字段管理。嵌入模式隐藏入口。
+入口位于现有项目侧栏的产品分析分组，名称为“业务分析”，与用户画像、会话、错误等菜单使用相同内部 Link、选中态和移动抽屉。页面在 `/projects/{id}?tab=novixBusiness` 渲染，中文路径加 `/zh`。页面留在 ViewProject 布局内，不使用 iframe，不打开独立应用。
+
+界面直接复用现有 DashboardHeader、日期选择器、刷新按钮、MetricCard、Select、Input、Button、Loader、Tailwind 主题和全局语言设置。Swetrix 使用 Headless UI + Tailwind CSS 及 `web/app/ui` 自有组件。原生表格样式、边框与间距沿用现有项目页；没有引入第二套组件库。业务模块包含中英文文案，其他语言暂回退英文。
+
+日期取原生实际生效的 period、timeBucket、timezone 与原始 from/to；默认 `7d/hour` 明确传入 BFF。原生日期修改立即查询；业务筛选点“应用”提交，使用 `novix_` URL 参数，与原生流量筛选隔离。资源概览仅接收日期参数，产品筛选作用于使用、留存和任务结果等产品报表。日期支持最多 93 个自然日，不展示比较周期。切换其他菜单后可返回并保留日期与业务筛选。
 
 BFF 独立验证真实用户会话与私有项目权限。这里的菜单配置只控制可见性，实际鉴权仍由 BFF 执行。服务器需先部署扩展并配置 `/novix/*` 同域路由，再启用菜单配置。
 
-业务查询、数据源适配和看板逻辑保留在 Novix 独立扩展。Swetrix 升级时维护 root loader 的公开项目列表字段、侧栏链接与小型 URL 适配器，并重跑链接回归、typecheck 和构建。当前入口适配基于中文分支 `5156f15f66e1a4fde8eac7e84fbcfe3565433aeb`。
+业务查询、数据源适配和统计计算保留在 Novix 独立 BFF；本仓的 `web/app/pages/Project/tabs/Business` 负责原生展示。旧 `/novix/projects/{id}/business` 由 BFF 验证权限后重定向原生页面，并保留等价日期和业务筛选。数据与会话仍访问同域 `/novix/api/v1/projects/{id}/...`，服务令牌不进入浏览器。
 
-验证先观察到两个链接生成的失败断言，再实现启用条件和参数传递。审查发现原生时区通常没有写入 URL，新增用例先复现缺失和冲突的参数，再让链接继承原生账号时区。最终补充空 URL、仅 `period=7d`、显式兼容 bucket、冲突原始参数的实际链接回归：修改前 8 项中 3 项失败，修复后全部通过。固定时钟 `2026-11-06T04:34:56Z`、Asia/Shanghai 的真实 adapter → BFF range 组合检查确认默认 `7d/hour` 起于 `2026-10-30T04:00:00Z`；独立访问 BFF 仍按近 7 个自然日处理。组合脚本只作为仓库外验证，不引入跨仓依赖。
+升级 Swetrix 时保留独立 Business 模块，并适配 PROJECT_TABS、ViewProject 的懒加载/刷新、ProjectSidebar 分组、路由标题、DashboardHeader 比较开关及两处菜单文案；root loader 的公开项目列表环境字段继续沿用。官方没有被此实现假定存在的插件加载 API。当前工作分支基于实际部署过的中文 commit `0ce3154b0c3a7d687afcec69200831aac3fff70d`，不从共享测试分支引入代码。
 
-覆盖检查命令为 `node --test test/novixAnalytics.test.mjs`、`npm run typecheck --prefix web`、`npm run build --prefix web` 和修改源码的 oxlint。这里只验证源码与构建，真实部署和菜单跳转验收在扩展服务与同域路由就绪后进行。
+检查命令为 `node --test test/*.test.mjs`、`npm run typecheck --prefix web`、`npm run build --prefix web` 和修改源码的 oxlint。展示测试通过 Vite SSR 加载真实 MetricCard，覆盖未知与零、待成熟留存、日/周 cohort、接受区间状态与实际终态事件分离、渠道转义和 Token 覆盖。
 
-本次 8 个 Node 测试、typecheck、build 均通过。三份修改源码的 oxlint 无错误，保留 ProjectSidebar 与 ViewProject 的三处原有 set-state-in-effect 警告；构建保留体积超过 500 kB 的 chunk 提示。
+前端按 `web/Dockerfile` 构建，使用 OCI revision 标签对应源码 commit。现有部署继续通过只读绑定的 HTTPS Express adapter 启动，完整源码也保留在 `deploy/novix/frontend-server.mjs`。重建时把该文件放到 `/app/novix-frontend-server.mjs` 并用 `node /app/novix-frontend-server.mjs` 启动，保持已有 API_ORIGIN、BASE_URL、项目开关及 Docker 子网设置。该适配器只信任现有专用 Docker 子网的代理头。公开源码归档需覆盖本仓和此适配器。
 
-## 2026-11-09 实际部署
+## 2026-11-09 早期独立入口部署记录
+
+以下为原生页改造前的验收，不能作为原生页已经部署的证明；新的部署记录追加在末尾。
 
 本次部署分支从当时实际运行的中文 commit `0ce3154b0c3a7d687afcec69200831aac3fff70d` 出发，仅带入入口适配提交，编译源码为 `a302a9545a9d176fb9f9946743d7f88699661e66`。重新执行的 8 项菜单测试、typecheck 和 build 通过。镜像 `novix/swetrix-fe:5.5.3-novix-analytics.2` 的实际 image ID 为 `sha256:74e65bf95337dbb19719a0d1efc355918a21bec9a15e0b7ef5532059e2a09cb3`，健康且零重启。保留原 HTTPS Express adapter，其他 API、ClickHouse、Redis、网关和独立 BFF 容器未被这次前端更新重建。
 
