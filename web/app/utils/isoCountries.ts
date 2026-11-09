@@ -13,7 +13,7 @@ countries.registerLocale({
     ...countriesEn.countries,
     TW: 'Taiwan',
     US: 'United States',
-    CN: 'China',
+    CN: 'Mainland China',
     RU: 'Russia',
   },
 })
@@ -34,6 +34,12 @@ countries.registerLocale({
 })
 countries.registerLocale(countriesFr)
 countries.registerLocale(countriesPt)
-countries.registerLocale(countriesZh)
+countries.registerLocale({
+  locale: 'zh',
+  countries: {
+    ...countriesZh.countries,
+    CN: '中国大陆',
+  },
+})
 
 export default countries
