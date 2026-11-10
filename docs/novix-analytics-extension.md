@@ -93,3 +93,17 @@ Swetrix 按单一在线环境维护。本次从现有开发分支直接部署新
 前端镜像 `novix/swetrix-fe:5.5.3-novix-analytics.8`，源码 `adb624068762ceae4d57473a81b97a48176f7921`，实际 image ID 为 `sha256:954051e11207703661164cebc586d42a360c9f9d6f730ea11a7665ecfc751334`。[完整源码](https://api-analytics.novix.science/source/swetrix-fe-5.5.3-novix-analytics.8-source.tar.gz)为 33,765,787 bytes，SHA256 `049349dc93e263e6aeea64b854a3b691cd100f1e878ab4e1c60f32f616079aaf`。公开源码下载、摘要及 `/source` 元数据与部署一致；前端 healthy、零重启，其他容器 ID 保持不变。
 
 现有 14 项回归、typecheck、build、样式一致性检查通过，两个修改组件的 oxlint 和格式检查通过。线上候选 API 已验证 Production 的 104 个页面路径和 14 种事件、Staging 的 171 个路径和 15 种事件（验收时快照）。真实浏览器验证了候选浏览、关键词搜索、选择 `/chat` 和 `feature_submit_attempted` 后保存、整页刷新及实际转化查询；也验证了未上报事件名手动输入、失焦及保存读回。测试漏斗按精确 ID、名称和预期步骤校验后清理，其他漏斗保留。英文表单提示已验收，最终恢复中文并停留在正式项目的事件下拉列表；验收区间新增控制台 error/warn 为 0。
+
+## 2026-11-10 业务流程漏斗配置
+
+用户授权批量配置业务流程。Production、Staging 各通过社区版现有 `POST /v1/project/funnel` 保存五条通用漏斗： 首页 → 研究工作台、任务提交 → 后端受理、任务受理 → 结果查看、工作台 → 套餐升级页、工作台 → 额度详情页。步骤定义保存在 `deploy/novix/funnel-presets.json`，按名称/步骤预检并复用已有项，不覆盖用户已有配置；两个项目分别读回与实际转化查询通过。调用沿用项目 admin 权限，没有直接执行 SQL。新建主机的受限备份目录 `/srv/swetrix-data/backups/business-funnels-20261110` 保留创建前快照与结果。
+
+原生漏斗只保存页面/事件名；各功能共用 `feature_submit_attempted` 等事件，原生筛选也不足以保证每一步属于同一个功能和任务。因此另外将八个已上线功能作为业务预设放在同一漏斗菜单：Auto-Discovery、Auto Pilot、Deep Survey、Idea Spark、Method Design、Auto Experiment、Data Analysis、Reproduce Paper。它们直接读取已有 BFF 按功能和同一操作链计算的曝光 → 提交 → 受理 → 成功 → 结果查看，转换窗口为入口后七天；预设不伪装成八份相同事件名的原生漏斗，也不改原生漏斗存储协议。尚未上线的功能和单独 Deep Mode 变体没有预设。
+
+预设只在已有 Novix 业务项目开关启用时显示，嵌入及其他项目不启用。单次仅查询选中功能，沿用真实会话、私有项目鉴权、环境默认内部流量口径和最多 93 个自然日的报表限制。原生日期与时区生效，流量筛选和上次业务页的模式/算力条件不混入预设；选择预设与原生漏斗相互清理 URL 选中状态。未知值与待成熟窗口沿用业务页的 `FunnelSection` 展示，并提示历史观测缺失不等于失败。原生刷新按钮同时支持当前业务查询。
+
+前端镜像 `novix/swetrix-fe:5.5.3-novix-analytics.9`，源码 `d7f8589ad87fad4265ce6388e2b8cddb37aaf7f1`，实际 image ID 为 `sha256:d2aefbdf134be375d23db644ba0d5f271f1fac30d1730fc4b56efc6703d4d41a`。[完整源码](https://api-analytics.novix.science/source/swetrix-fe-5.5.3-novix-analytics.9-source.tar.gz)为 33,770,823 bytes，SHA256 `73d352448befa3ee9e60add66c1ec22df91f29ba06180a72db3ee1f9353bcf14`。公开下载、摘要、运行镜像和 `/source` 元数据已核对；前端 healthy、零重启，其他服务容器 ID 不变。业务 BFF、Swetrix API 及 Novix 业务服务均沿用已有版本。
+
+20 项前端回归、typecheck、build 和新模块 lint 通过，原文件未改动区域的 hooks 警告保留。无 Git 的 web-only 构建中，客户端/SSR 样式一致性检查通过，样式为 `tailwind-Df5gGti4.css`。两个项目共 16 次功能报表查询全部为 200，均验证返回功能条件与五阶段结构，正式约 4.3–5.4 秒、测试约 5.8–7.8 秒。浏览器已验证正式 Auto Pilot 与 Deep Survey 的真实五阶段数据，以及切换过去四周。
+
+最终浏览器验收还覆盖整页刷新保留 Deep Survey/四周条件、切换回原生提交→受理漏斗并正常显示图表、Staging 的 Data Analysis 显示测试数据，再恢复 Production/七天/Auto Pilot。手动刷新完成后表格和操作按钮均正常，验收区间新增控制台 error/warn 为 0；完整页面截图保留于本会话。没有发布 Novix 前后端、改变业务表或启用新的服务鉴权。
