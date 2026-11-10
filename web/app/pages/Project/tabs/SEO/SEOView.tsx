@@ -390,8 +390,9 @@ const SEOViewInner = ({ tnMapping }: SEOViewProps) => {
   )
 
   const organicPositionsOptions = useMemo(
-    () => buildOrganicPositionsChartOptions(organicPositions, theme, t),
-    [organicPositions, theme, t],
+    () =>
+      buildOrganicPositionsChartOptions(organicPositions, theme, t, language),
+    [organicPositions, theme, t, language],
   )
 
   const countryRowMapper = useCallback(
@@ -448,6 +449,7 @@ const SEOViewInner = ({ tnMapping }: SEOViewProps) => {
         !noRegionPeriods.includes(period),
         filteredAnnotations,
         isActiveCompare && compareSeries.length ? compareSeries : undefined,
+        language,
       ),
     [
       series,
@@ -458,6 +460,7 @@ const SEOViewInner = ({ tnMapping }: SEOViewProps) => {
       compareSeries,
       period,
       filteredAnnotations,
+      language,
     ],
   )
 

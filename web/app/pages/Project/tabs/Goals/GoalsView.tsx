@@ -1,7 +1,6 @@
 import type { ChartOptions } from 'billboard.js'
 import { area, bar } from 'billboard.js'
 import cx from 'clsx'
-import * as d3 from 'd3'
 import dayjs from 'dayjs'
 import type { TFunction } from 'i18next'
 import _debounce from 'lodash/debounce'
@@ -30,6 +29,7 @@ import {
   type MouseEvent,
 } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
+import { chartTimeFormatter } from '~/utils/chartDate'
 import { useFetcher, useLoaderData, useRevalidator } from 'react-router'
 import { toast } from 'sonner'
 
@@ -283,6 +283,7 @@ const getGoalChartSettings = (
   onDataPointClick?: ChartDataPointClick,
   dataPointClickLabel?: string,
 ): ChartOptions => {
+  const chartTimeFormat = chartTimeFormatter(language)
   const xAxisSize = _size(chartData.x)
 
   const columns: any[] = [
@@ -347,11 +348,11 @@ const getGoalChartSettings = (
             // @ts-expect-error
             timeFormat === TimeFormat['24-hour']
               ? (x: string) =>
-                  d3.timeFormat(tbsFormatMapper24h[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper24h[timeBucket])(
                     x as unknown as Date,
                   )
               : (x: string) =>
-                  d3.timeFormat(tbsFormatMapper[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper[timeBucket])(
                     x as unknown as Date,
                   ),
         },
@@ -382,8 +383,10 @@ const getGoalChartSettings = (
         return `<div class='bg-gray-50 dark:bg-slate-900 rounded-lg ring-1 ring-black/10 dark:ring-white/10 px-3 py-2.5 text-xs md:text-sm max-w-sm md:max-w-md shadow-lg z-50'>
           <div class='font-semibold pb-1 mb-1 border-b border-gray-200 dark:border-slate-800 text-gray-900 dark:text-gray-50'>${
             timeFormat === TimeFormat['24-hour']
-              ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(item[0].x)
-              : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
+              ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+                  item[0].x,
+                )
+              : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
           }</div>
           ${_map(item, (el: { id: string; name: string; value: string }) => {
             return `

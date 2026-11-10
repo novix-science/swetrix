@@ -1,6 +1,5 @@
 import type { ChartOptions, GridLineOptions } from 'billboard.js'
 import { area, areaSpline, spline, bar, line, zoom } from 'billboard.js'
-import * as d3 from 'd3'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezonePlugin from 'dayjs/plugin/timezone'
@@ -68,6 +67,7 @@ import {
 } from '~/utils/generic'
 import countries from '~/utils/isoCountries'
 import { downloadBlob } from '~/utils/download'
+import { chartTimeFormatter } from '~/utils/chartDate'
 
 import { TrafficLogResponse } from './interfaces/traffic'
 import {
@@ -637,7 +637,9 @@ const getSettings = (
   timezone?: string,
   onDataPointClick?: ChartDataPointClick,
   dataPointClickLabel?: string,
+  language = 'en',
 ): ChartOptions => {
+  const chartTimeFormat = chartTimeFormatter(language)
   const xAxisSize = _size(chart.x)
 
   const lines = getAnnotationGridLines(annotations)
@@ -837,11 +839,11 @@ const getSettings = (
             // @ts-expect-error
             timeFormat === TimeFormat['24-hour']
               ? (x: string) =>
-                  d3.timeFormat(tbsFormatMapper24h[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper24h[timeBucket])(
                     x as unknown as Date,
                   )
               : (x: string) =>
-                  d3.timeFormat(tbsFormatMapper[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper[timeBucket])(
                     x as unknown as Date,
                   ),
         },
@@ -887,8 +889,10 @@ const getSettings = (
           return `<ul class='bg-gray-50 dark:text-gray-50 dark:bg-slate-900 rounded-md ring-1 ring-black/10 px-2 py-1 text-xs md:text-sm max-h-[250px] md:max-h-[350px] overflow-y-auto shadow-md z-50'>
           <li class='font-semibold pb-1 mb-1 border-b border-gray-200 dark:border-slate-800 sticky top-0 bg-gray-50 dark:bg-slate-900'>${
             timeFormat === TimeFormat['24-hour']
-              ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(item[0].x)
-              : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
+              ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+                  item[0].x,
+                )
+              : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
           }</li>
           ${_map(
             item,
@@ -968,15 +972,17 @@ const getSettings = (
 
         const xDataValue = currentDate
           ? timeFormat === TimeFormat['24-hour']
-            ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(currentDate)
-            : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(currentDate)
+            ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+                currentDate,
+              )
+            : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(currentDate)
           : ''
         const xDataValueCompare = compareDate
           ? timeFormat === TimeFormat['24-hour']
-            ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+            ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
                 dayjs(compareDate).toDate(),
               )
-            : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(
+            : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(
                 dayjs(compareDate).toDate(),
               )
           : ''
@@ -1163,7 +1169,9 @@ const getSettingsCustomEventsStacked = (
   timeBucket: string,
   rotateXAxis: boolean,
   timeFormat: string,
+  language = 'en',
 ): ChartOptions => {
+  const chartTimeFormat = chartTimeFormatter(language)
   if (!chart || _isEmpty(chart.x) || _isEmpty(chart.events)) {
     return {}
   }
@@ -1243,11 +1251,11 @@ const getSettingsCustomEventsStacked = (
             // @ts-expect-error
             timeFormat === TimeFormat['24-hour']
               ? (x: string) =>
-                  d3.timeFormat(tbsFormatMapper24h[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper24h[timeBucket])(
                     x as unknown as Date,
                   )
               : (x: string) =>
-                  d3.timeFormat(tbsFormatMapper[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper[timeBucket])(
                     x as unknown as Date,
                   ),
         },
@@ -1272,8 +1280,10 @@ const getSettingsCustomEventsStacked = (
         return `<ul class='bg-gray-50 dark:text-gray-50 dark:bg-slate-900 rounded-md ring-1 ring-black/10 px-2 py-1 text-xs md:text-sm max-h-[250px] md:max-h-[350px] overflow-y-auto shadow-md z-50'>
           <li class='font-semibold pb-1 mb-1 border-b border-gray-200 dark:border-slate-800 sticky top-0 bg-gray-50 dark:bg-slate-900'>${
             timeFormat === TimeFormat['24-hour']
-              ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(item[0].x)
-              : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
+              ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+                  item[0].x,
+                )
+              : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
           }</li>
           ${_map(
             item,
@@ -1338,7 +1348,9 @@ const getSettingsSession = (
   chartType: string,
   onZoom?: (domain: [Date, Date]) => void,
   enableZoom: boolean = true,
+  language = 'en',
 ): ChartOptions => {
+  const chartTimeFormat = chartTimeFormatter(language)
   const chartData = chartInput || { x: [] } // Default to an empty chart structure if undefined
   const xAxisSize = _size(chartData.x)
 
@@ -1426,11 +1438,11 @@ const getSettingsSession = (
             // @ts-expect-error
             timeFormat === TimeFormat['24-hour']
               ? (x: string) =>
-                  d3.timeFormat(tbsFormatMapper24h[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper24h[timeBucket])(
                     x as unknown as Date,
                   )
               : (x: string) =>
-                  d3.timeFormat(tbsFormatMapper[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper[timeBucket])(
                     x as unknown as Date,
                   ),
         },
@@ -1454,8 +1466,10 @@ const getSettingsSession = (
         return `<ul class='bg-gray-50 dark:text-gray-50 dark:bg-slate-900 rounded-md ring-1 ring-black/10 px-2 py-1 text-xs md:text-sm max-h-[250px] md:max-h-[350px] overflow-y-auto shadow-md z-50'>
           <li class='font-semibold pb-1 mb-1 border-b border-gray-200 dark:border-slate-800 sticky top-0 bg-gray-50 dark:bg-slate-900'>${
             timeFormat === TimeFormat['24-hour']
-              ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(item[0].x)
-              : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
+              ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+                  item[0].x,
+                )
+              : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
           }</li>
           ${_map(
             item,
@@ -1522,7 +1536,9 @@ const getSettingsError = (
   dataNames?: Record<string, string>,
   onDataPointClick?: ChartDataPointClick,
   dataPointClickLabel?: string,
+  language = 'en',
 ): ChartOptions => {
+  const chartTimeFormat = chartTimeFormatter(language)
   const xAxisSize = _size(chart.x)
 
   const annotationLines = getAnnotationGridLines(annotations)
@@ -1629,11 +1645,11 @@ const getSettingsError = (
             // @ts-expect-error
             timeFormat === TimeFormat['24-hour']
               ? (x: string) =>
-                  d3.timeFormat(tbsFormatMapper24h[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper24h[timeBucket])(
                     x as unknown as Date,
                   )
               : (x: string) =>
-                  d3.timeFormat(tbsFormatMapper[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper[timeBucket])(
                     x as unknown as Date,
                   ),
         },
@@ -1654,8 +1670,10 @@ const getSettingsError = (
         return `<ul class='bg-gray-50 dark:text-gray-50 dark:bg-slate-900 rounded-md ring-1 ring-black/10 px-2 py-1 text-xs md:text-sm max-h-[250px] md:max-h-[350px] overflow-y-auto shadow-md z-50'>
           <li class='font-semibold pb-1 mb-1 border-b border-gray-200 dark:border-slate-800 sticky top-0 bg-gray-50 dark:bg-slate-900'>${
             timeFormat === TimeFormat['24-hour']
-              ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(item[0].x)
-              : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
+              ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+                  item[0].x,
+                )
+              : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
           }</li>
           ${_map(
             item,
@@ -2010,7 +2028,9 @@ const getSettingsPerf = (
   annotations?: Annotation[],
   onDataPointClick?: ChartDataPointClick,
   dataPointClickLabel?: string,
+  language = 'en',
 ): ChartOptions => {
+  const chartTimeFormat = chartTimeFormatter(language)
   const xAxisSize = _size(chart.x)
   const columns = getColumnsPerf(chart, activeChartMetrics, compareChart)
 
@@ -2134,11 +2154,11 @@ const getSettingsPerf = (
             // @ts-expect-error
             timeFormat === TimeFormat['24-hour']
               ? (x: string) =>
-                  d3.timeFormat(tbsFormatMapper24h[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper24h[timeBucket])(
                     x as unknown as Date,
                   )
               : (x: string) =>
-                  d3.timeFormat(tbsFormatMapper[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper[timeBucket])(
                     x as unknown as Date,
                   ),
         },
@@ -2167,8 +2187,8 @@ const getSettingsPerf = (
           return `<ul class='bg-gray-50 dark:text-gray-50 dark:bg-slate-900 rounded-md ring-1 ring-black/10 px-2 py-1 text-xs md:text-sm max-h-[250px] md:max-h-[350px] overflow-y-auto shadow-md z-50'>
         <li class='font-semibold pb-1 mb-1 border-b border-gray-200 dark:border-slate-800 sticky top-0 bg-gray-50 dark:bg-slate-900'>${
           timeFormat === TimeFormat['24-hour']
-            ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(item[0].x)
-            : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
+            ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(item[0].x)
+            : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
         }</li>
         ${_map(
           item,
@@ -2207,15 +2227,17 @@ const getSettingsPerf = (
 
         const xDataValue = currentDate
           ? timeFormat === TimeFormat['24-hour']
-            ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(currentDate)
-            : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(currentDate)
+            ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+                currentDate,
+              )
+            : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(currentDate)
           : ''
         const xDataValueCompare = compareDate
           ? timeFormat === TimeFormat['24-hour']
-            ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+            ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
                 dayjs(compareDate).toDate(),
               )
-            : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(
+            : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(
                 dayjs(compareDate).toDate(),
               )
           : ''
@@ -2576,7 +2598,9 @@ const getSettingsCaptcha = (
   timeFormat: string,
   rotateXAxis: boolean,
   chartType: string,
+  language = 'en',
 ): ChartOptions => {
+  const chartTimeFormat = chartTimeFormatter(language)
   const xAxisSize = _size(chart.x)
   const series = [
     'generated',
@@ -2673,11 +2697,11 @@ const getSettingsCaptcha = (
             // @ts-expect-error
             timeFormat === TimeFormat['24-hour']
               ? (x: string) =>
-                  d3.timeFormat(tbsFormatMapper24h[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper24h[timeBucket])(
                     x as unknown as Date,
                   )
               : (x: string) =>
-                  d3.timeFormat(tbsFormatMapper[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper[timeBucket])(
                     x as unknown as Date,
                   ),
         },
@@ -2698,8 +2722,10 @@ const getSettingsCaptcha = (
         return `<ul class='bg-gray-50 dark:text-gray-50 dark:bg-slate-900 rounded-md ring-1 ring-black/10 px-2 py-1 text-xs md:text-sm max-h-[250px] md:max-h-[350px] overflow-y-auto shadow-md z-50'>
           <li class='font-semibold pb-1 mb-1 border-b border-gray-200 dark:border-slate-800 sticky top-0 bg-gray-50 dark:bg-slate-900'>${
             timeFormat === TimeFormat['24-hour']
-              ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(item[0].x)
-              : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
+              ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+                  item[0].x,
+                )
+              : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
           }</li>
           ${_map(
             item,

@@ -1,5 +1,6 @@
 import { ChartOptions } from 'billboard.js'
 import React, { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { MainChart } from '../../View/components/MainChart'
 import { getSettingsCaptcha } from '../../View/ViewProject.helpers'
@@ -33,6 +34,8 @@ export const CaptchaChart = ({
   className,
   children,
 }: CaptchaChartProps) => {
+  const { i18n } = useTranslation('common')
+  const language = i18n.resolvedLanguage || i18n.language
   const options: ChartOptions = useMemo(() => {
     if (!chart) {
       return {} as ChartOptions
@@ -43,12 +46,29 @@ export const CaptchaChart = ({
       timeFormat,
       rotateXAxis,
       chartType,
+      language,
     )
-  }, [chart, timeBucket, timeFormat, rotateXAxis, chartType])
+  }, [chart, timeBucket, timeFormat, rotateXAxis, chartType, language])
 
   const deps = useMemo(
-    () => [chart, timeBucket, timeFormat, rotateXAxis, chartType, dataNames],
-    [chart, timeBucket, timeFormat, rotateXAxis, chartType, dataNames],
+    () => [
+      chart,
+      timeBucket,
+      timeFormat,
+      rotateXAxis,
+      chartType,
+      dataNames,
+      language,
+    ],
+    [
+      chart,
+      timeBucket,
+      timeFormat,
+      rotateXAxis,
+      chartType,
+      dataNames,
+      language,
+    ],
   )
 
   if (!chart) {

@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import timezonePlugin from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
+import { chartTimeFormatter } from '~/utils/chartDate'
 
 dayjs.extend(utc)
 dayjs.extend(timezonePlugin)
@@ -146,12 +147,14 @@ export const getChartPointWindow = ({
   timeBucket,
   timezone,
   timeFormat,
+  language = 'en',
 }: {
   x: Date
   xValue?: string
   timeBucket: string
   timezone: string
   timeFormat: string
+  language?: string
 }) => {
   const chartDate = dayjs(x)
   let wallTime = chartDate.format('YYYY-MM-DD HH:mm:ss')
@@ -169,42 +172,50 @@ export const getChartPointWindow = ({
   }
 
   const date = dayjs.tz(wallTime, timezone)
+  const labelDate = new Date(
+    Date.UTC(
+      date.year(),
+      date.month(),
+      date.date(),
+      date.hour(),
+      date.minute(),
+      date.second(),
+    ),
+  )
+  const formatLabel = (format: string) =>
+    chartTimeFormatter(language, true)(format)(labelDate)
 
   switch (timeBucket) {
     case 'minute':
       return {
         from: date.startOf('minute').toISOString(),
         to: date.endOf('minute').toISOString(),
-        label: date.format('MMM D, YYYY HH:mm'),
+        label: formatLabel('%b %d, %Y %H:%M'),
       }
     case 'hour':
       return {
         from: date.startOf('hour').toISOString(),
         to: date.endOf('hour').toISOString(),
-        label: date.format(
-          timeFormat === '24-hour'
-            ? 'MMM D, YYYY HH:00 - HH:59'
-            : 'MMM D, YYYY h:00 - h:59 A',
-        ),
+        label: `${formatLabel('%b %d, %Y')} ${formatLabel(timeFormat === '24-hour' ? '%H:00 - %H:59' : '%I:00 - %I:59 %p')}`,
       }
     case 'month':
       return {
         from: date.startOf('month').toISOString(),
         to: date.endOf('month').toISOString(),
-        label: date.format('MMMM YYYY'),
+        label: formatLabel('%B %Y'),
       }
     case 'year':
       return {
         from: date.startOf('year').toISOString(),
         to: date.endOf('year').toISOString(),
-        label: date.format('YYYY'),
+        label: formatLabel('%Y'),
       }
     case 'day':
     default:
       return {
         from: date.startOf('day').toISOString(),
         to: date.endOf('day').toISOString(),
-        label: date.format('dddd, MMM D, YYYY'),
+        label: formatLabel('%A, %b %d, %Y'),
       }
   }
 }

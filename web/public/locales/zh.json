@@ -1,4 +1,16 @@
 {
+  "analyticsUi": {
+    "mapAverageLoadTime": "平均加载时间",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "noOptions": "暂无可选项",
+    "select": "请选择…",
+    "projectNamePlaceholder": "我的项目",
+    "settingsNavigation": "设置导航",
+    "renderingChart": "正在绘制图表…",
+    "removeTag": "移除标签",
+    "weekOf": "{{date}} 所在周"
+  },
   "apiNotifications": {
     "somethingWentWrong": "出了点问题，请重试",
     "emailRegistered": "使用此邮箱的用户已存在",

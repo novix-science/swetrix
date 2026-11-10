@@ -14,7 +14,7 @@ import Select from '~/ui/Select'
 
 import JourneysView from '../JourneysView'
 
-import { journeyQuery, readJourney } from './api'
+import { JourneyError, journeyQuery, readJourney } from './api'
 import JourneyVisits, { Pagination } from './JourneyVisits'
 import {
   labelsFor,
@@ -45,6 +45,8 @@ const supportedPeriods = new Set([
   '7d',
   '4w',
   '3M',
+  '12M',
+  '24M',
   'custom',
 ])
 
@@ -294,7 +296,10 @@ function NovixJourneyReport({ projectId }: { projectId: string }) {
           role='alert'
           className='mb-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200'
         >
-          {l.error}{' '}
+          {paths.error instanceof JourneyError &&
+          paths.error.code === 'invalid_analytics_range'
+            ? l.rangeError
+            : l.error}{' '}
           <Button size='sm' variant='ghost' onClick={() => paths.refetch()}>
             {l.retry}
           </Button>

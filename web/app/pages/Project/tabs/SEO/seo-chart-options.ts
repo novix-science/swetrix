@@ -7,6 +7,7 @@ import type { TFunction } from 'i18next'
 
 import type { Annotation } from '~/lib/models/Project'
 import { escapeHtml, nFormatter } from '~/utils/generic'
+import { chartTimeFormatter } from '~/utils/chartDate'
 import {
   SEO_IMPRESSION_POSITION_BUCKETS,
   SEO_METRICS,
@@ -69,7 +70,9 @@ export function buildMainChartOptions(
   applyRegions: boolean,
   annotations?: Annotation[],
   compareSeries?: DateSeriesEntry[],
+  language = 'en',
 ): ChartOptions {
+  const chartTimeFormat = chartTimeFormatter(language)
   if (!series.length) return {}
 
   const dates = series.map((d) => d.date)
@@ -196,7 +199,7 @@ export function buildMainChartOptions(
         type: 'timeseries',
         tick: {
           fit: true,
-          format: tickFormat,
+          format: chartTimeFormat(tickFormat),
           rotate: 0,
         },
       },
@@ -251,14 +254,20 @@ export function buildMainChartOptions(
         const tooltipFormatMap: Record<string, string> = {
           hour: '%b %d, %Y %H:%M',
           day: '%a, %d %b',
-          week: 'Week of %b %d, %Y',
+          week: '%b %d, %Y',
           month: '%B %Y',
           quarter: '%B %Y',
           year: '%Y',
         }
         const tooltipFmt = tooltipFormatMap[timeBucket] || '%b %d, %Y'
         const firstIndex = items[0].index ?? 0
-        const headerLabel = d3.timeFormat(tooltipFmt)(items[0].x)
+        const formatHeader = (date: Date) => {
+          const label = chartTimeFormat(tooltipFmt)(date)
+          return timeBucket === 'week'
+            ? escapeHtml(t('analyticsUi.weekOf', { date: label }))
+            : label
+        }
+        const headerLabel = formatHeader(items[0].x)
         const compareDate = hasCompareSeries
           ? compareSeries?.[firstIndex]?.date
           : null
@@ -266,7 +275,7 @@ export function buildMainChartOptions(
           ? d3.timeParse(xFormat)(compareDate)
           : null
         const compareHeaderLabel = parsedCompareDate
-          ? d3.timeFormat(tooltipFmt)(parsedCompareDate)
+          ? formatHeader(parsedCompareDate)
           : ''
         const currentItems = items.filter(
           (el: any) => !String(el.id).endsWith('Compare'),
@@ -429,7 +438,9 @@ export function buildOrganicPositionsChartOptions(
   series: OrganicPositionEntry[],
   theme: string,
   t: TFunction,
+  language = 'en',
 ): ChartOptions {
+  const chartTimeFormat = chartTimeFormatter(language)
   const labels = SEO_ORGANIC_POSITION_BUCKETS.map(({ label }) => label)
   const columns: any[] = [
     ['x', ...series.map(({ date }) => date)],
@@ -473,7 +484,7 @@ export function buildOrganicPositionsChartOptions(
         type: 'timeseries',
         tick: {
           fit: true,
-          format: '%b %d',
+          format: chartTimeFormat('%b %d'),
         },
       },
       y: {
@@ -514,7 +525,7 @@ export function buildOrganicPositionsChartOptions(
       contents: (items, _defaultTitleFormat, _defaultValueFormat, color) => {
         if (!items.length) return ''
 
-        const headerLabel = d3.timeFormat('%a, %d %b')(items[0].x)
+        const headerLabel = chartTimeFormat('%a, %d %b')(items[0].x)
         const orderedItems = items.slice().reverse()
         const allPositions = orderedItems.reduce(
           (sum: number, el: any) => sum + Number(el.value || 0),

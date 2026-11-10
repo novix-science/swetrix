@@ -508,8 +508,8 @@ const InteractiveMapCore = ({
           type='button'
           onClick={() => map.zoomIn()}
           className='pointer-events-auto rounded-md border border-gray-300 bg-gray-50 p-2 text-gray-700 shadow-sm transition-colors ring-inset hover:bg-white focus:z-10 focus:ring-1 focus:ring-slate-900 focus:outline-hidden dark:border-slate-700/80 dark:bg-slate-950 dark:text-gray-200 dark:hover:bg-slate-900 dark:focus:ring-slate-300'
-          aria-label='Zoom in'
-          title='Zoom in'
+          aria-label={t('analyticsUi.zoomIn')}
+          title={t('analyticsUi.zoomIn')}
         >
           <PlusIcon className='size-4' />
         </button>
@@ -517,8 +517,8 @@ const InteractiveMapCore = ({
           type='button'
           onClick={() => map.zoomOut()}
           className='pointer-events-auto rounded-md border border-gray-300 bg-gray-50 p-2 text-gray-700 shadow-sm transition-colors ring-inset hover:bg-white focus:z-10 focus:ring-1 focus:ring-slate-900 focus:outline-hidden dark:border-slate-700/80 dark:bg-slate-950 dark:text-gray-200 dark:hover:bg-slate-900 dark:focus:ring-slate-300'
-          aria-label='Zoom out'
-          title='Zoom out'
+          aria-label={t('analyticsUi.zoomOut')}
+          title={t('analyticsUi.zoomOut')}
         >
           <MinusIcon className='size-4' />
         </button>
@@ -547,8 +547,8 @@ const InteractiveMapCore = ({
           <button
             type='button'
             onClick={() => onFullscreenToggle(true)}
-            aria-label='Fullscreen'
-            title='Fullscreen'
+            aria-label={t('project.sessionReplay.fullscreen')}
+            title={t('project.sessionReplay.fullscreen')}
             className='rounded-md border border-gray-300 bg-gray-50 p-1.5 text-gray-700 transition-colors ring-inset hover:bg-white focus:z-10 focus:ring-1 focus:ring-slate-900 focus:outline-hidden dark:border-slate-700/80 dark:bg-slate-950 dark:text-gray-200 dark:hover:bg-slate-900 dark:focus:ring-slate-300'
           >
             <ArrowsOutIcon className='size-4' />
@@ -658,12 +658,12 @@ const InteractiveMapCore = ({
                   )}
             </span>{' '}
             <span className='text-gray-500 dark:text-gray-400'>
-              ({tooltipContent.percentage.toFixed(1)}%)
+              ({tooltipContent.percentage.toFixed(1)}%){' '}
               {isTrafficTab
-                ? ' visitors'
+                ? t('project.visitors')
                 : isErrorsTab
-                  ? ' occurrences'
-                  : ' avg load time'}
+                  ? t('project.occurrences')
+                  : t('analyticsUi.mapAverageLoadTime')}
             </span>
           </div>
         </div>

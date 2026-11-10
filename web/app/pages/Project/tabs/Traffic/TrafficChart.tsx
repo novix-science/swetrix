@@ -50,7 +50,8 @@ export const TrafficChart = ({
   timezone,
   onDataPointClick,
 }: TrafficChartProps) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const language = i18n.resolvedLanguage || i18n.language
 
   const dataPointClickLabel = useMemo(
     () => (onDataPointClick ? t('project.exploreSessions') : undefined),
@@ -80,6 +81,7 @@ export const TrafficChart = ({
       timezone,
       onDataPointClick,
       dataPointClickLabel,
+      language,
     )
   }, [
     chartData,
@@ -97,6 +99,7 @@ export const TrafficChart = ({
     timezone,
     onDataPointClick,
     dataPointClickLabel,
+    language,
   ])
 
   const deps = useMemo(
@@ -116,6 +119,7 @@ export const TrafficChart = ({
       timezone,
       onDataPointClick,
       dataPointClickLabel,
+      language,
     ],
     [
       chartData,
@@ -133,6 +137,7 @@ export const TrafficChart = ({
       timezone,
       onDataPointClick,
       dataPointClickLabel,
+      language,
     ],
   )
 

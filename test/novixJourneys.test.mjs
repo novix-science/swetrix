@@ -11,11 +11,13 @@ const server = await createServer({ configFile: false,
   root: fileURLToPath(new URL('../web', import.meta.url)),
   resolve: { alias: { '~': fileURLToPath(new URL('../web/app', import.meta.url)) } },
   server: { middlewareMode: true, watch: null, ws: false }, logLevel: 'silent' })
-let model, views, api
+let model, views, api, chartDates, chartPoint
 try {
   model = await server.ssrLoadModule('/app/pages/Project/tabs/Journeys/novix/model.ts')
   views = await server.ssrLoadModule('/app/pages/Project/tabs/Journeys/novix/PathViews.tsx')
   api = await server.ssrLoadModule('/app/pages/Project/tabs/Journeys/novix/api.ts')
+  chartDates = await server.ssrLoadModule('/app/utils/chartDate.ts')
+  chartPoint = await server.ssrLoadModule('/app/pages/Project/View/utils/chartPoint.ts')
 } finally { await server.close() }
 const l = model.labelsFor('zh')
 
@@ -82,4 +84,38 @@ test('journeys use effective native date filters, exact custom bounds and an ind
   assert.equal(query.get('to'), searchParams.get('to'))
   assert.equal(query.get('profile'), 'usr_novix-user-42')
   assert.equal(query.has('filters'), false)
+})
+
+test('long journey date filters preserve the requested 24 months without silently shortening them', () => {
+  const query = api.journeyQuery({ searchParams: new URLSearchParams(), period: '24M', timeBucket: 'month', timezone: 'Asia/Shanghai' })
+  assert.equal(query.get('period'), '24M')
+  assert.equal(query.get('timeBucket'), 'month')
+  assert.equal(query.get('timezone'), 'Asia/Shanghai')
+})
+
+test('chart dates localize months, weekdays and 12-hour periods without changing date values or other locales', () => {
+  const date = new Date(2026, 10, 3, 22, 0)
+  const stamp = date.getTime()
+  const en = chartDates.chartTimeFormatter('en')
+  const zh = chartDates.chartTimeFormatter('zh')
+  assert.equal(zh('%d %b %H:%M')(date), '11月3日 22:00')
+  assert.equal(zh('%d %b %I %p')(date), '11月3日 下午10时')
+  assert.equal(zh('%a, %d %b')(date), '11月3日 周二')
+  assert.equal(zh('%b %Y')(date), '2026年11月')
+  assert.equal(en('%d %b %H:%M')(date), '03 Nov 22:00')
+  assert.match(chartDates.chartTimeFormatter('fr')('%d %b')(date), /nov/)
+  assert.equal(chartDates.chartTimeFormatter('en')('%a, %d %b')(date), 'Tue, 03 Nov')
+  assert.equal(date.getTime(), stamp)
+})
+
+test('localized drilldown dates preserve timezone and DST query bounds', () => {
+  const options = { x: new Date(2026, 10, 1, 12), xValue: '2026-11-01 12:00:00', timeBucket: 'day', timezone: 'America/New_York', timeFormat: '24-hour' }
+  const en = chartPoint.getChartPointWindow({ ...options, language: 'en' })
+  const zh = chartPoint.getChartPointWindow({ ...options, language: 'zh' })
+  assert.equal(en.from, zh.from)
+  assert.equal(en.to, zh.to)
+  assert.equal(zh.from, '2026-11-01T04:00:00.000Z')
+  assert.equal(zh.to, '2026-11-02T04:59:59.999Z')
+  assert.match(zh.label, /2026年11月1日/)
+  assert.match(en.label, /Nov/)
 })

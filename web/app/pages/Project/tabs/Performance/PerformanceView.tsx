@@ -226,10 +226,11 @@ const PerformanceViewInner = ({ tnMapping }: PerformanceViewProps) => {
           timeBucket,
           timezone,
           timeFormat,
+          language,
         }),
       )
     },
-    [timeBucket, timeFormat, timezone],
+    [timeBucket, timeFormat, timezone, language],
   )
 
   // Filter annotations to only those within the chart's visible x-axis range

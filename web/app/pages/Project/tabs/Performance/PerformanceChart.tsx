@@ -42,7 +42,8 @@ export const PerformanceChart = ({
   annotations,
   onDataPointClick,
 }: PerformanceChartProps) => {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
+  const language = i18n.resolvedLanguage || i18n.language
 
   const dataPointClickLabel = useMemo(
     () => (onDataPointClick ? t('project.exploreSessions') : undefined),
@@ -68,6 +69,7 @@ export const PerformanceChart = ({
       undefined,
       onDataPointClick,
       dataPointClickLabel,
+      language,
     )
   }, [
     chart,
@@ -81,6 +83,7 @@ export const PerformanceChart = ({
     enableZoom,
     onDataPointClick,
     dataPointClickLabel,
+    language,
   ])
 
   const deps = useMemo(
@@ -96,6 +99,7 @@ export const PerformanceChart = ({
       enableZoom,
       onDataPointClick,
       dataPointClickLabel,
+      language,
     ],
     [
       chart,
@@ -109,6 +113,7 @@ export const PerformanceChart = ({
       enableZoom,
       onDataPointClick,
       dataPointClickLabel,
+      language,
     ],
   )
 

@@ -1,5 +1,6 @@
 import { ChartOptions } from 'billboard.js'
 import React, { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { chartTypes } from '~/lib/constants'
 
@@ -30,6 +31,8 @@ export const SessionChart = ({
   onZoom,
   className,
 }: SessionChartProps) => {
+  const { i18n } = useTranslation('common')
+  const language = i18n.resolvedLanguage || i18n.language
   const isTouchDevice = useMemo(() => {
     if (typeof window === 'undefined') return false
     const hasTouchEvent = 'ontouchstart' in window
@@ -52,8 +55,17 @@ export const SessionChart = ({
       chartTypes.line,
       onZoom,
       !isTouchDevice,
+      language,
     )
-  }, [chart, timeBucket, timeFormat, rotateXAxis, onZoom, isTouchDevice])
+  }, [
+    chart,
+    timeBucket,
+    timeFormat,
+    rotateXAxis,
+    onZoom,
+    isTouchDevice,
+    language,
+  ])
 
   const deps = useMemo(
     () => [
@@ -64,6 +76,7 @@ export const SessionChart = ({
       dataNames,
       onZoom,
       isTouchDevice,
+      language,
     ],
     [
       chart,
@@ -73,6 +86,7 @@ export const SessionChart = ({
       dataNames,
       onZoom,
       isTouchDevice,
+      language,
     ],
   )
 

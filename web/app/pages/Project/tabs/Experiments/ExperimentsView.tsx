@@ -18,6 +18,7 @@ import {
 } from '@phosphor-icons/react'
 import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
+import { chartTimeFormatter } from '~/utils/chartDate'
 import { Link } from '~/ui/Link'
 import { useFetcher, useLocation, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -465,7 +466,8 @@ const ExperimentRow = ({
   timezone,
   filters,
 }: ExperimentRowProps) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const language = i18n.resolvedLanguage || i18n.language
   const location = useLocation()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showCompleteModal, setShowCompleteModal] = useState(false)
@@ -478,25 +480,28 @@ const ExperimentRow = ({
   )
   const launchBlockerText = launchGuardrails.blockers.join(', ')
   const timingLabel = useMemo(() => {
+    const formatDate = (value: string) =>
+      chartTimeFormatter(language)('%b %d, %Y')(dayjs(value).toDate())
     if (experiment.status === 'completed' && experiment.endedAt) {
       return t('experiments.endedAtDate', {
-        date: dayjs(experiment.endedAt).format('MMM D, YYYY'),
+        date: formatDate(experiment.endedAt),
       })
     }
 
     if (experiment.startedAt) {
       return t('experiments.startedAtDate', {
-        date: dayjs(experiment.startedAt).format('MMM D, YYYY'),
+        date: formatDate(experiment.startedAt),
       })
     }
 
-    return dayjs(experiment.created).fromNow()
+    return dayjs(experiment.created).locale(language).fromNow()
   }, [
     experiment.created,
     experiment.endedAt,
     experiment.startedAt,
     experiment.status,
     t,
+    language,
   ])
   const isEditDisabled =
     experiment.status === 'running' || experiment.status === 'completed'

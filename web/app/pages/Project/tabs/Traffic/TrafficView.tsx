@@ -229,10 +229,11 @@ const TrafficViewInner = ({
           timeBucket,
           timezone,
           timeFormat,
+          language,
         }),
       )
     },
-    [timeBucket, timeFormat, timezone],
+    [timeBucket, timeFormat, timezone, language],
   )
 
   const [activeChartMetrics, setActiveChartMetrics] = useState({

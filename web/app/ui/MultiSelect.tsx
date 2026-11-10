@@ -12,6 +12,7 @@ import {
   useMemo,
   type ReactNode,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Text } from './Text'
 
 interface MultiSelectProps {
@@ -36,11 +37,13 @@ const MultiSelect = ({
   keyExtractor,
   label,
   hint,
-  placeholder = 'Select...',
+  placeholder,
   className,
   itemExtractor,
   onSearch,
 }: MultiSelectProps) => {
+  const { t } = useTranslation('common')
+  const selectPlaceholder = placeholder ?? t('analyticsUi.select')
   const [isOpen, setIsOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [activeIndex, setActiveIndex] = useState(-1)
@@ -170,13 +173,13 @@ const MultiSelect = ({
         <input
           ref={inputRef}
           type='text'
-          aria-label={placeholder}
+          aria-label={selectPlaceholder}
           aria-controls={listboxId}
           aria-autocomplete='list'
           aria-activedescendant={activeOptionId}
           aria-describedby={hint ? hintId : undefined}
           className='block w-full rounded-md border-0 bg-white py-2 pr-9 pl-3 text-sm font-medium text-gray-900 ring-1 ring-gray-300 transition-[background-color,box-shadow] duration-150 ease-out ring-inset placeholder:text-gray-400 hover:ring-gray-400 focus:ring-2 focus:ring-slate-900 focus:outline-hidden dark:bg-slate-950 dark:text-gray-50 dark:ring-slate-700/80 dark:placeholder:text-gray-500 dark:hover:ring-slate-600 dark:focus:ring-slate-300'
-          placeholder={placeholder}
+          placeholder={selectPlaceholder}
           value={searchValue}
           onChange={handleInputChange}
           onFocus={handleFocus}
@@ -206,7 +209,7 @@ const MultiSelect = ({
                 colour='muted'
                 className='mx-1 px-3 py-2'
               >
-                No options available
+                {t('analyticsUi.noOptions')}
               </Text>
             ) : (
               _map(items, (item, index) => {

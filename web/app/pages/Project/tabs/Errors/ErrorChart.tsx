@@ -49,7 +49,8 @@ export const ErrorChart = ({
   onDataPointClick,
   isRefetching,
 }: ErrorChartProps) => {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
+  const language = i18n.resolvedLanguage || i18n.language
 
   const dataPointClickLabel = useMemo(
     () => (onDataPointClick ? t('project.exploreSessions') : undefined),
@@ -77,6 +78,7 @@ export const ErrorChart = ({
       dataNames,
       onDataPointClick,
       dataPointClickLabel,
+      language,
     )
   }, [
     chart,
@@ -88,6 +90,7 @@ export const ErrorChart = ({
     dataNames,
     onDataPointClick,
     dataPointClickLabel,
+    language,
   ])
 
   const deps = useMemo(
@@ -101,6 +104,7 @@ export const ErrorChart = ({
       annotations,
       onDataPointClick,
       dataPointClickLabel,
+      language,
     ],
     [
       chart,
@@ -112,6 +116,7 @@ export const ErrorChart = ({
       annotations,
       onDataPointClick,
       dataPointClickLabel,
+      language,
     ],
   )
 

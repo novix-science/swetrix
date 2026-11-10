@@ -270,7 +270,10 @@ const SettingsSidebar = <TabId extends string>({
   )
 
   return (
-    <nav className='flex flex-col' aria-label='Sidebar'>
+    <nav
+      className='flex flex-col'
+      aria-label={t('analyticsUi.settingsNavigation')}
+    >
       {_map(sidebarGroups, (group) => (
         <CollapsibleGroup
           key={group.id}

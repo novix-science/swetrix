@@ -536,7 +536,8 @@ const CustomEvents = ({
   getCustomEventMetadata,
   getFilterLink,
 }: CustomEventsProps) => {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
+  const language = i18n.resolvedLanguage || i18n.language
   const { timeBucket, timeFormat, rotateXAxis } = useViewProjectContext()
 
   const [detailsOpened, setDetailsOpened] = useState(false)
@@ -1118,8 +1119,9 @@ const CustomEvents = ({
       timeBucket,
       rotateXAxis,
       timeFormat,
+      language,
     )
-  }, [stackedChart, timeBucket, rotateXAxis, timeFormat])
+  }, [stackedChart, timeBucket, rotateXAxis, timeFormat, language])
 
   const renderStackedChart = () => {
     const hasChartData = !!stackedChart && !_isEmpty(stackedChart.events)
@@ -1142,7 +1144,7 @@ const CustomEvents = ({
         chartId='custom-events-stacked-chart'
         options={stackedChartOptions}
         className='custom-events-stacked-chart h-full w-full'
-        deps={[stackedChart, timeBucket, rotateXAxis, timeFormat]}
+        deps={[stackedChart, timeBucket, rotateXAxis, timeFormat, language]}
       />
     )
   }

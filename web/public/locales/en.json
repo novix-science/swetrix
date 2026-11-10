@@ -1,4 +1,16 @@
 {
+  "analyticsUi": {
+    "mapAverageLoadTime": "avg load time",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "noOptions": "No options available",
+    "select": "Select...",
+    "projectNamePlaceholder": "My awesome project",
+    "settingsNavigation": "Settings navigation",
+    "renderingChart": "Rendering chart...",
+    "removeTag": "Remove tag",
+    "weekOf": "Week of {{date}}"
+  },
   "apiNotifications": {
     "somethingWentWrong": "Something went wrong, please try again",
     "emailRegistered": "A user with this email already exists",

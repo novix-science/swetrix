@@ -424,6 +424,7 @@ const MessageContent = ({
   projectId?: string
   projectPath?: string
 }) => {
+  const { t } = useTranslation('common')
   const segments = useMemo(() => parseSegments(content), [content])
   const hasAnyContent = segments.length > 0
 
@@ -457,7 +458,7 @@ const MessageContent = ({
               className='flex h-[200px] w-full items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400 dark:border-slate-700 dark:bg-slate-900/40 dark:text-gray-500'
             >
               <SpinnerGapIcon className='mr-2 h-4 w-4 animate-spin' />
-              Rendering chart...
+              {t('analyticsUi.renderingChart')}
             </div>
           )
         }
@@ -1239,6 +1240,7 @@ const TagChip = ({
   onRemove?: () => void
   className?: string
 }) => {
+  const { t } = useTranslation('common')
   const baseClasses =
     'inline-flex max-w-[180px] items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset transition-colors'
   const activeClasses =
@@ -1259,7 +1261,7 @@ const TagChip = ({
             e.stopPropagation()
             onRemove()
           }}
-          aria-label='Remove tag'
+          aria-label={t('analyticsUi.removeTag')}
           className='rounded-full p-0.5 opacity-70 hover:opacity-100'
         >
           <XIcon className='h-3 w-3' />

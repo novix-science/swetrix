@@ -25,6 +25,7 @@
   "loading": "Loading journeys…",
   "retry": "Retry",
   "error": "Journeys could not be loaded. Retry or select a shorter date range.",
+  "rangeError": "Journey reports support up to 24 months aligned to month boundaries. Select a shorter valid date range.",
   "searchError": "User lookup is unavailable. Try the numeric user ID; email lookup requires profile-trait read access.",
   "definition": "Each row is an observed visit path, with consecutive repeats merged. Visits are separated after 30 minutes of inactivity; different identified users remain separate. Single-page visits are included.",
   "ranking": "Shown visits / all visits in scope",

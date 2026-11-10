@@ -37,6 +37,7 @@ import { toast } from 'sonner'
 import BillboardChart from '~/ui/BillboardChart'
 import { Text } from '~/ui/Text'
 import { cn } from '~/utils/generic'
+import { chartTimeFormatter } from '~/utils/chartDate'
 
 const VALID_LINK_TABS = new Set([
   'traffic',
@@ -254,11 +255,16 @@ const formatTooltipValue = (value: number): string => {
   return value.toLocaleString()
 }
 
-const formatTooltipDate = (x: Date | string, granularity: number) => {
+const formatTooltipDate = (
+  x: Date | string,
+  granularity: number,
+  language: string,
+) => {
   const d = dayjs(x)
   if (!d.isValid()) return String(x)
-  if (granularity <= 24) return d.format('MMM D, YYYY HH:mm')
-  return d.format('MMM D, YYYY')
+  return chartTimeFormatter(language)(
+    granularity <= 24 ? '%b %d, %Y %H:%M' : '%b %d, %Y',
+  )(d.toDate())
 }
 
 const isLikelyDate = (val: string): boolean => {
@@ -542,7 +548,8 @@ const TYPE_ICONS: Record<
 }
 
 const AIChart: React.FC<AIChartProps> = ({ chart, projectId, projectPath }) => {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
+  const language = i18n.resolvedLanguage || i18n.language
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [displayType, setDisplayType] = useState<AIChartType>(chart.chartType)
   const [chartReady, setChartReady] = useState(false)
@@ -767,7 +774,7 @@ const AIChart: React.FC<AIChartProps> = ({ chart, projectId, projectPath }) => {
                   if (xData.length <= 24) {
                     return d.format('HH:mm')
                   }
-                  return d.format('MMM D')
+                  return chartTimeFormatter(language)('%b %d')(d.toDate())
                 }
               : undefined,
           },
@@ -827,7 +834,7 @@ const AIChart: React.FC<AIChartProps> = ({ chart, projectId, projectPath }) => {
           if (items.length) {
             const first = items[0]
             if (first.x instanceof Date) {
-              titleStr = formatTooltipDate(first.x, xData.length)
+              titleStr = formatTooltipDate(first.x, xData.length, language)
             } else {
               const idx =
                 typeof first.index === 'number'
@@ -837,7 +844,7 @@ const AIChart: React.FC<AIChartProps> = ({ chart, projectId, projectPath }) => {
                     : 0
               const original = xData[idx] ?? first.x
               titleStr = isDateAxis
-                ? formatTooltipDate(original as string, xData.length)
+                ? formatTooltipDate(original as string, xData.length, language)
                 : String(original ?? '')
             }
           }
@@ -865,7 +872,7 @@ const AIChart: React.FC<AIChartProps> = ({ chart, projectId, projectPath }) => {
         right: 20,
       },
     }
-  }, [chart, displayType])
+  }, [chart, displayType, language])
 
   const filenameBase = useMemo(
     () => slugify(chart.title || 'chart'),

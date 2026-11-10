@@ -2,7 +2,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { ChartOptions } from 'billboard.js'
 import { area, bar } from 'billboard.js'
 import cx from 'clsx'
-import * as d3 from 'd3'
 import dayjs from 'dayjs'
 import _isEmpty from 'lodash/isEmpty'
 import _map from 'lodash/map'
@@ -17,6 +16,7 @@ import {
 } from '@phosphor-icons/react'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { chartTimeFormatter } from '~/utils/chartDate'
 import { Link } from '~/ui/Link'
 import { useLocation, useSearchParams, useFetcher } from 'react-router'
 import { ClientOnly } from 'remix-utils/client-only'
@@ -145,7 +145,9 @@ const getErrorTrendsChartSettings = (
   dataNames: Record<string, string>,
   onDataPointClick?: ChartDataPointClick,
   dataPointClickLabel?: string,
+  language = 'en',
 ): ChartOptions => {
+  const chartTimeFormat = chartTimeFormatter(language)
   const xAxisSize = _size(chartData.x)
 
   const columns: any[] = [
@@ -209,11 +211,11 @@ const getErrorTrendsChartSettings = (
             // @ts-expect-error
             timeFormat === TimeFormat['24-hour']
               ? (x: string) =>
-                  d3.timeFormat(tbsFormatMapper24h[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper24h[timeBucket])(
                     x as unknown as Date,
                   )
               : (x: string) =>
-                  d3.timeFormat(tbsFormatMapper[timeBucket])(
+                  chartTimeFormat(tbsFormatMapper[timeBucket])(
                     x as unknown as Date,
                   ),
         },
@@ -237,8 +239,10 @@ const getErrorTrendsChartSettings = (
         return `<ul class='bg-gray-50 dark:text-gray-50 dark:bg-slate-900 rounded-md ring-1 ring-black/10 px-2 py-1 text-xs md:text-sm max-h-[250px] md:max-h-[350px] overflow-y-auto shadow-md z-50'>
           <li class='font-semibold pb-1 mb-1 border-b border-gray-200 dark:border-slate-800 sticky top-0 bg-gray-50 dark:bg-slate-900'>${
             timeFormat === TimeFormat['24-hour']
-              ? d3.timeFormat(tbsFormatMapperTooltip24h[timeBucket])(item[0].x)
-              : d3.timeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
+              ? chartTimeFormat(tbsFormatMapperTooltip24h[timeBucket])(
+                  item[0].x,
+                )
+              : chartTimeFormat(tbsFormatMapperTooltip[timeBucket])(item[0].x)
           }</li>
           ${_map(item, (el: { id: string; name: string; value: string }) => {
             return `
@@ -788,10 +792,11 @@ const ErrorsViewInner = () => {
           timeBucket: overviewTimeBucket,
           timezone,
           timeFormat,
+          language,
         }),
       )
     },
-    [overviewTimeBucket, timeFormat, timezone],
+    [overviewTimeBucket, timeFormat, timezone, language],
   )
 
   const handleActiveErrorDataPointClick = useCallback(
@@ -805,6 +810,7 @@ const ErrorsViewInner = () => {
           timeBucket: activeError.timeBucket || timeBucket,
           timezone,
           timeFormat,
+          language,
         }),
         errorId: activeError.details.eid,
       })
@@ -815,6 +821,7 @@ const ErrorsViewInner = () => {
       timeBucket,
       timeFormat,
       timezone,
+      language,
     ],
   )
 
@@ -832,6 +839,7 @@ const ErrorsViewInner = () => {
       },
       handleOverviewDataPointClick,
       t('project.exploreSessions'),
+      language,
     )
   }, [
     overview?.chart,
@@ -839,6 +847,7 @@ const ErrorsViewInner = () => {
     timeFormat,
     handleOverviewDataPointClick,
     t,
+    language,
   ])
 
   const hasErrorsRaw =
