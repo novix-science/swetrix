@@ -35,7 +35,6 @@ export default function UnifiedTrafficView({
   const zh = (i18n.resolvedLanguage || i18n.language).startsWith('zh')
   const [params, setParams] = useSearchParams()
   const range = historyRange(params)
-  const [draft, setDraft] = useState(range)
   const [page, setPage] = useState(0)
   const query = useQuery({
     queryKey: ['v2', projectId, 'unified-traffic', range],
@@ -62,7 +61,6 @@ export default function UnifiedTrafficView({
       : new Intl.NumberFormat(zh ? 'zh-CN' : 'en-US').format(Number(value))
   const select = (start: string, end: string) => {
     setPage(0)
-    setDraft({ start, end })
     setParams(withHistoryRange(params, start, end))
   }
   const latest = historyRange(new URLSearchParams('period=today')).end
@@ -146,26 +144,42 @@ export default function UnifiedTrafficView({
           className='flex flex-wrap items-end gap-3'
           onSubmit={(e) => {
             e.preventDefault()
-            select(draft.start, draft.end)
+            const form = e.currentTarget
+            const values = new FormData(form)
+            const start = String(values.get('start'))
+            const end = String(values.get('end'))
+            if (start > end) {
+              const field = form.elements.namedItem('end') as HTMLInputElement
+              field.setCustomValidity(
+                zh
+                  ? '结束日期不能早于开始日期'
+                  : 'End date must follow start date',
+              )
+              field.reportValidity()
+              return
+            }
+            select(start, end)
           }}
         >
           <Input
             type='date'
+            name='start'
             label={zh ? '开始日期' : 'Start date'}
-            value={draft.start}
+            defaultValue={range.start}
             min={FIRST_HISTORY_DAY}
-            max={draft.end}
+            max={latest}
             required
-            onChange={(e) => setDraft({ ...draft, start: e.target.value })}
+            onInput={(e) => e.currentTarget.setCustomValidity('')}
           />
           <Input
             type='date'
+            name='end'
             label={zh ? '结束日期' : 'End date'}
-            value={draft.end}
-            min={draft.start}
+            defaultValue={range.end}
+            min={FIRST_HISTORY_DAY}
             max={latest}
             required
-            onChange={(e) => setDraft({ ...draft, end: e.target.value })}
+            onInput={(e) => e.currentTarget.setCustomValidity('')}
           />
           <Button type='submit'>{zh ? '应用' : 'Apply'}</Button>
           <span className='pb-2 text-sm text-gray-500'>
