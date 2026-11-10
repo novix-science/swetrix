@@ -108,6 +108,15 @@ import Tooltip from '~/ui/Tooltip'
 import { getLocaleDisplayName, nLocaleFormatter } from '~/utils/generic'
 import { groupRefEntries } from '~/utils/referrers'
 import { ChartTypeSwitcher } from '../../View/components/ChartTypeSwitcher'
+import UnifiedTrafficView from './UnifiedTrafficView'
+import {
+  FIRST_HISTORY_DAY,
+  NATIVE_FIRST_FULL_DAY,
+  UNIFIED_PROJECT,
+  historyRange,
+  withHistoryRange,
+} from './unifiedRange'
+import Button from '~/ui/Button'
 
 dayjs.extend(utc)
 dayjs.extend(timezonePlugin)
@@ -143,7 +152,16 @@ function HasImportedIndicator() {
 }
 
 function TrafficViewWrapper(props: TrafficViewProps) {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { id } = useCurrentProject()
+  const { filters } = useViewProjectContext()
+  const { i18n } = useTranslation('common')
+  const range = historyRange(searchParams)
+  const unified =
+    id === UNIFIED_PROJECT &&
+    range.start < NATIVE_FIRST_FULL_DAY &&
+    !searchParams.has('novix_live') &&
+    filters.length === 0
   const resetKey = `traffic:${searchParams.toString()}`
 
   return (
@@ -151,7 +169,36 @@ function TrafficViewWrapper(props: TrafficViewProps) {
       titleKey='dashboard.failedToLoadTraffic'
       resetKey={resetKey}
     >
-      <TrafficViewInner {...props} />
+      {unified ? (
+        <UnifiedTrafficView
+          key={`${range.start}-${range.end}`}
+          projectId={id}
+        />
+      ) : (
+        <>
+          {id === UNIFIED_PROJECT ? (
+            <div className='mb-3 flex justify-end'>
+              <Button
+                variant='secondary'
+                onClick={() =>
+                  setSearchParams(
+                    withHistoryRange(
+                      searchParams,
+                      FIRST_HISTORY_DAY,
+                      historyRange(new URLSearchParams('period=today')).end,
+                    ),
+                  )
+                }
+              >
+                {i18n.language.startsWith('zh')
+                  ? '查看历史与新增流量'
+                  : 'View historical and live traffic'}
+              </Button>
+            </div>
+          ) : null}
+          <TrafficViewInner {...props} />
+        </>
+      )}
     </TabErrorBoundary>
   )
 }
