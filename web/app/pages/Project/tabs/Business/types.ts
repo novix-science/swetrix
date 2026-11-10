@@ -26,6 +26,14 @@ export interface BusinessFeature {
   uses: number
   users: number
   averageUses: Metric
+  viewedActors?: Metric
+  interactedActors?: Metric
+  featureSources?: {
+    recorded: number
+    recovered: number
+    legacy: number
+    unknown: number
+  }
 }
 
 interface Cohort {
@@ -110,6 +118,14 @@ export interface ProductReport {
     missingCompletionTimes: number
     excludedOrigins: number
     unknownFeatureUses: number
+    featureAttribution?: {
+      total: number
+      recorded: number
+      recovered: number
+      legacy: number
+      unknown: number
+      firstRecordedAt: string | null
+    }
     identity: { legacyAnonymousEvents: number }
     filterGaps: Record<string, number>
   }

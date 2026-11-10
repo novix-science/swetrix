@@ -1,4 +1,5 @@
 import React from 'react'
+import { FeatureCoverage } from './FeatureCoverage'
 import { MetricCard } from '~/pages/Project/tabs/Traffic/MetricCards'
 import type {
   Labels,
@@ -220,6 +221,7 @@ export function ProductSections({
         </p>
       </section>
       <Panel title={l('featureUsage')}>
+        <FeatureCoverage report={report} labels={l} />
         <Table
           title={l('featureUsage')}
           columns={[
@@ -232,6 +234,9 @@ export function ProductSections({
             'uses',
             'activeUsers',
             'averageUses',
+            'viewedActors',
+            'interactedActors',
+            'featureSourceOrder',
           ].map(l)}
           rows={report.features.map((row) => [
             row.label,
@@ -250,6 +255,11 @@ export function ProductSections({
               row.users,
               row.averageUses,
             ].map(n),
+            n(row.viewedActors ?? null),
+            n(row.interactedActors ?? null),
+            row.featureSources
+              ? `${row.featureSources.recorded} / ${row.featureSources.recovered} / ${row.featureSources.legacy} / ${row.featureSources.unknown}`
+              : '—',
           ])}
         />
       </Panel>

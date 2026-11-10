@@ -118,6 +118,19 @@ const fixture = () => ({
   },
 });
 
+test('feature table warns about incompatible historical coverage and distinguishes functional activity', () => {
+  const report = fixture();
+  report.coverage.unknownFeatureUses = 1724;
+  report.coverage.featureAttribution = { total: 2471, recorded: 245, recovered: 0, legacy: 502, unknown: 1724 };
+  report.features[0] = { ...report.features[0], label: 'Auto-Discovery', viewedActors: 4, interactedActors: 2, featureSources: { recorded: 2, recovered: 0, legacy: 0, unknown: 0 } };
+  const html = renderToStaticMarkup(React.createElement(ProductSections, { report, labels, language: 'en' }));
+  assert.ok(html.includes('245 / 0 / 502 / 1724'));
+  assert.ok(html.includes(labels.featureCoverageWarning));
+  assert.ok(html.includes(labels.viewedActors));
+  assert.ok(html.includes(labels.interactedActors));
+  assert.ok(html.includes(labels.featureUsageDefinition));
+});
+
 test("native panels preserve unknown metrics, zero values, pending cohorts and all feature rows", () => {
   const html = renderToStaticMarkup(
     React.createElement(ProductSections, { report: fixture(), labels, language: "en" }),
