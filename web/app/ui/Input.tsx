@@ -7,6 +7,7 @@ import {
 import cx from 'clsx'
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react'
 import React, { memo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import FaviconGlyph from './FaviconGlyph'
 import { Text } from './Text'
 
@@ -55,6 +56,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref,
   ) => {
+    const { t } = useTranslation('common')
     const isError = Boolean(error)
     const type = rest.type || 'text'
     const isPassword = type === 'password'
@@ -141,7 +143,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 if (disabled) return
                 setShowPassword(!showPassword)
               }}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={
+                showPassword
+                  ? t('analyticsUi.hidePassword')
+                  : t('analyticsUi.showPassword')
+              }
               aria-pressed={showPassword}
               disabled={disabled}
               aria-disabled={disabled || undefined}

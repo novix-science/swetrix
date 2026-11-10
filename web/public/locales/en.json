@@ -1,5 +1,11 @@
 {
   "analyticsUi": {
+    "expandVersions": "Expand versions",
+    "collapseVersions": "Collapse versions",
+    "selectDate": "Select a date...",
+    "selectDateRange": "Select a date range...",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "mapAverageLoadTime": "avg load time",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",

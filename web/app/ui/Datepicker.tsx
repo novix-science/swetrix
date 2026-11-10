@@ -350,7 +350,9 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
             onClick={() => setOpen(true)}
             value={label || ''}
             placeholder={
-              isSingleMode ? 'Select a date...' : 'Select a date range...'
+              isSingleMode
+                ? t('analyticsUi.selectDate')
+                : t('analyticsUi.selectDateRange')
             }
             className={options.altInputClass}
           />

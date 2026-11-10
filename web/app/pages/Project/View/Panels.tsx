@@ -2332,8 +2332,8 @@ const Panel = ({
                             className='mr-1 rounded p-0.5 hover:bg-gray-200 dark:hover:bg-slate-700/80'
                             aria-label={
                               isExpanded
-                                ? 'Collapse versions'
-                                : 'Expand versions'
+                                ? t('analyticsUi.collapseVersions')
+                                : t('analyticsUi.expandVersions')
                             }
                           >
                             <CaretRightIcon

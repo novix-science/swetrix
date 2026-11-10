@@ -1,5 +1,11 @@
 {
   "analyticsUi": {
+    "expandVersions": "展开版本",
+    "collapseVersions": "收起版本",
+    "selectDate": "请选择日期…",
+    "selectDateRange": "请选择日期范围…",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
     "mapAverageLoadTime": "平均加载时间",
     "zoomIn": "放大",
     "zoomOut": "缩小",
