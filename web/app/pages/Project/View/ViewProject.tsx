@@ -124,6 +124,9 @@ const FeatureFlagsView = lazy(
 const FunnelsView = lazy(() => import('../tabs/Funnels/FunnelsView'))
 const GoalsView = lazy(() => import('../tabs/Goals/GoalsView'))
 const JourneysView = lazy(() => import('../tabs/Journeys/JourneysView'))
+const NovixJourneysView = lazy(
+  () => import('../tabs/Journeys/novix/NovixJourneysView'),
+)
 const PerformanceView = lazy(
   () => import('../tabs/Performance/PerformanceView'),
 )
@@ -1622,7 +1625,11 @@ const ViewProjectContent = () => {
                               />
                             ) : null}
                             {activeTab === PROJECT_TABS.journeys ? (
-                              <JourneysView tnMapping={tnMapping} />
+                              businessEnabled ? (
+                                <NovixJourneysView projectId={id} />
+                              ) : (
+                                <JourneysView tnMapping={tnMapping} />
+                              )
                             ) : null}
                             {activeTab === PROJECT_TABS.profiles ? (
                               <ProfilesView tnMapping={tnMapping} />
