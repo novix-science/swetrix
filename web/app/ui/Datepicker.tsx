@@ -30,6 +30,7 @@ interface DatePickerProps {
   mode?: 'single' | 'range'
   inputId?: string
   ariaLabelledBy?: string
+  align?: 'left' | 'right'
 }
 
 type DatePickerHandle = {
@@ -118,6 +119,7 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
       mode = 'range',
       inputId,
       ariaLabelledBy,
+      align = 'right',
     },
     ref,
   ) {
@@ -441,7 +443,7 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
                   open
                   ref={popoverRef}
                   aria-label={t('analyticsUi.selectDateRange')}
-                  className='relative m-0 mt-10 w-[320px] max-w-none origin-top transform-gpu rounded-xl border border-gray-200 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-950'
+                  className='relative m-0 mt-10 w-[320px] max-w-none origin-top transform-gpu rounded-xl border border-gray-200 bg-white p-3 text-gray-900 shadow-md dark:border-slate-800 dark:bg-slate-950 dark:text-gray-50'
                 >
                   <div className='flex items-center justify-between'>
                     <button
@@ -601,12 +603,19 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
             </div>
           ) : (
             // Anchored popover (toolbar usage)
-            <div className='absolute top-7 right-0 z-50 origin-top-right transform-gpu'>
+            <div
+              className={cn(
+                'absolute top-7 z-50 transform-gpu',
+                align === 'left'
+                  ? 'left-0 origin-top-left'
+                  : 'right-0 origin-top-right',
+              )}
+            >
               <dialog
                 open
                 ref={popoverRef}
                 aria-label={t('analyticsUi.selectDateRange')}
-                className='relative m-0 w-[320px] max-w-none rounded-xl border border-gray-200 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-950'
+                className='relative m-0 w-[320px] max-w-none rounded-xl border border-gray-200 bg-white p-3 text-gray-900 shadow-md dark:border-slate-800 dark:bg-slate-950 dark:text-gray-50'
               >
                 <div className='flex items-center justify-between'>
                   <button

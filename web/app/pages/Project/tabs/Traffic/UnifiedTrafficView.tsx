@@ -155,7 +155,7 @@ export default function UnifiedTrafficView({
           </div>
         </div>
         <div className='flex flex-wrap items-center gap-3'>
-          <div className='flex w-full items-center sm:w-auto'>
+          <div className='relative flex w-full items-center sm:w-auto'>
             <Button
               variant='secondary'
               className='w-full justify-center gap-2 sm:w-auto'
@@ -171,6 +171,8 @@ export default function UnifiedTrafficView({
             </Button>
             <DatePicker
               ref={calendar}
+              align='left'
+              className='absolute top-4 left-0'
               value={calendarValue}
               minDate={minDate}
               maxDate={maxDate}
