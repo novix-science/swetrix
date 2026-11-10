@@ -1,15 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { CalendarDotsIcon, CaretDownIcon } from '@phosphor-icons/react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 
 import DashboardHeader from '~/pages/Project/View/components/DashboardHeader'
 import Button from '~/ui/Button'
-import Input from '~/ui/Input'
+import DatePicker from '~/ui/Datepicker'
 import Loader from '~/ui/Loader'
 
 import {
   FIRST_HISTORY_DAY,
+  calendarDate,
+  calendarDay,
   historyRange,
   withHistoryRange,
 } from './unifiedRange'
@@ -64,6 +67,16 @@ export default function UnifiedTrafficView({
     setParams(withHistoryRange(params, start, end))
   }
   const latest = historyRange(new URLSearchParams('period=today')).end
+  const calendar = useRef<{
+    openCalendar: () => void
+    closeCalendar: () => void
+  }>(null)
+  const calendarValue = useMemo(
+    () => [calendarDate(range.start), calendarDate(range.end)],
+    [range.start, range.end],
+  )
+  const minDate = useMemo(() => calendarDate(FIRST_HISTORY_DAY), [])
+  const maxDate = useMemo(() => calendarDate(latest), [latest])
   const total = rows.reduce((n, r) => n + Number(r.pageviews), 0)
   const max = Math.max(1, ...rows.map((r) => Number(r.pageviews)))
   const firstDay = rows.length ? Date.parse(rows[0].date) : 0
@@ -141,56 +154,37 @@ export default function UnifiedTrafficView({
             ))}
           </div>
         </div>
-        <form
-          className='flex flex-wrap items-end gap-3'
-          onInput={(e) => {
-            const end = e.currentTarget.elements.namedItem(
-              'end',
-            ) as HTMLInputElement
-            end.setCustomValidity('')
-          }}
-          onSubmit={(e) => {
-            e.preventDefault()
-            const form = e.currentTarget
-            const values = new FormData(form)
-            const start = String(values.get('start'))
-            const end = String(values.get('end'))
-            if (start > end) {
-              const field = form.elements.namedItem('end') as HTMLInputElement
-              field.setCustomValidity(
-                zh
-                  ? '结束日期不能早于开始日期'
-                  : 'End date must follow start date',
-              )
-              field.reportValidity()
-              return
-            }
-            select(start, end)
-          }}
-        >
-          <Input
-            type='date'
-            name='start'
-            label={zh ? '开始日期' : 'Start date'}
-            defaultValue={range.start}
-            min={FIRST_HISTORY_DAY}
-            max={latest}
-            required
-          />
-          <Input
-            type='date'
-            name='end'
-            label={zh ? '结束日期' : 'End date'}
-            defaultValue={range.end}
-            min={FIRST_HISTORY_DAY}
-            max={latest}
-            required
-          />
-          <Button type='submit'>{zh ? '应用' : 'Apply'}</Button>
-          <span className='pb-2 text-sm text-gray-500'>
-            {range.start} — {range.end}
+        <div className='flex flex-wrap items-center gap-3'>
+          <div className='flex w-full items-center sm:w-auto'>
+            <Button
+              variant='secondary'
+              className='w-full justify-center gap-2 sm:w-auto'
+              aria-label={zh ? '选择日期范围' : 'Choose date range'}
+              aria-haspopup='dialog'
+              onClick={() => calendar.current?.openCalendar()}
+            >
+              <CalendarDotsIcon className='size-5' />
+              <span>
+                {range.start} — {range.end}
+              </span>
+              <CaretDownIcon className='size-4' />
+            </Button>
+            <DatePicker
+              ref={calendar}
+              value={calendarValue}
+              minDate={minDate}
+              maxDate={maxDate}
+              onChange={([start, end]) =>
+                select(calendarDay(start), calendarDay(end))
+              }
+            />
+          </div>
+          <span className='text-sm text-gray-500 dark:text-gray-400'>
+            {zh
+              ? '点击开始日期，再点击结束日期即可应用'
+              : 'Click a start date, then an end date to apply'}
           </span>
-        </form>
+        </div>
         <p className='rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600 dark:border-slate-800 dark:bg-slate-900/30 dark:text-gray-300'>
           {zh
             ? '同一天只采用一个流量来源：早期 GA4 → Cloudflare 完整日报 → 2026-11-10 起 Swetrix。来源切换可能影响计数。访客、活跃用户、Visits 与会话保留各自口径，缺失项显示 —，不跨日求和。'

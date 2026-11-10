@@ -22,6 +22,8 @@ interface DatePickerProps {
   onChange?: (dates: Date[]) => void
   value?: Date[]
   maxDateMonths?: number
+  minDate?: Date
+  maxDate?: Date
   options?: { altInputClass?: string }
   maxRange?: number
   className?: string
@@ -108,6 +110,8 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
       onChange,
       value = [],
       maxDateMonths = MAX_MONTHS_IN_PAST,
+      minDate,
+      maxDate,
       options,
       maxRange = 0,
       className,
@@ -121,10 +125,17 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
     const { t, i18n } = useTranslation('common')
     const locale = i18n.language
 
-    const today = useMemo(() => startOfDay(new Date()), [])
+    const [currentDay] = useState(() => startOfDay(new Date()))
+    const today = useMemo(
+      () => startOfDay(maxDate || currentDay),
+      [maxDate, currentDay],
+    )
     const absoluteMinDate = useMemo(
-      () => startOfDay(removeMonths(new Date(), maxDateMonths)),
-      [maxDateMonths],
+      () =>
+        startOfDay(
+          minDate || removeMonths(new Date(currentDay), maxDateMonths),
+        ),
+      [minDate, maxDateMonths, currentDay],
     )
 
     const [open, setOpen] = useState(false)
@@ -138,17 +149,35 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
       value?.[1] ? startOfDay(value[1]) : null,
     )
     const [hoverDate, setHoverDate] = useState<Date | null>(null)
-    const popoverRef = useRef<HTMLDivElement>(null)
+    const popoverRef = useRef<HTMLDialogElement>(null)
+
+    const openCalendar = () => {
+      setStart(value[0] ? startOfDay(value[0]) : null)
+      setEnd(value[1] ? startOfDay(value[1]) : null)
+      setHoverDate(null)
+      setAnchorMonth(startOfDay(value[0] || today))
+      setOpen(true)
+    }
+
+    useEffect(() => {
+      if (!open) return
+      const trigger = document.activeElement as HTMLElement | null
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== 'Escape') return
+        event.preventDefault()
+        setOpen(false)
+        trigger?.focus()
+      }
+      document.addEventListener('keydown', onKeyDown)
+      return () => document.removeEventListener('keydown', onKeyDown)
+    }, [open])
 
     // Close on outside click
-    useOnClickOutside(
-      popoverRef as React.RefObject<HTMLDivElement | HTMLUListElement>,
-      () => setOpen(false),
-    )
+    useOnClickOutside(popoverRef, () => setOpen(false))
 
     // Imperative API
     useImperativeHandle(ref, () => ({
-      openCalendar: () => setOpen(true),
+      openCalendar,
       closeCalendar: () => setOpen(false),
     }))
 
@@ -163,6 +192,11 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
 
     const weekFormatter = useMemo(
       () => new Intl.DateTimeFormat(locale, { weekday: 'short' }),
+      [locale],
+    )
+
+    const dayFormatter = useMemo(
+      () => new Intl.DateTimeFormat(locale, { dateStyle: 'full' }),
       [locale],
     )
 
@@ -202,6 +236,12 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
     const maxYear = today.getFullYear()
     const minMonthOfMinYear = absoluteMinDate.getMonth()
     const maxMonthOfMaxYear = today.getMonth()
+    const atFirstMonth =
+      anchorMonth.getFullYear() * 12 + anchorMonth.getMonth() <=
+      minYear * 12 + minMonthOfMinYear
+    const atLastMonth =
+      anchorMonth.getFullYear() * 12 + anchorMonth.getMonth() >=
+      maxYear * 12 + maxMonthOfMaxYear
 
     const monthNames = useMemo(
       () =>
@@ -347,7 +387,7 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
             readOnly
             id={inputId}
             aria-labelledby={ariaLabelledBy}
-            onClick={() => setOpen(true)}
+            onClick={openCalendar}
             value={label || ''}
             placeholder={
               isSingleMode
@@ -397,15 +437,18 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
                 leaveFrom='opacity-100 scale-100 translate-y-0'
                 leaveTo='opacity-0 scale-[0.98] translate-y-1'
               >
-                <div
+                <dialog
+                  open
                   ref={popoverRef}
-                  className='mt-10 w-[320px] origin-top transform-gpu rounded-xl border border-gray-200 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-950'
+                  aria-label={t('analyticsUi.selectDateRange')}
+                  className='relative m-0 mt-10 w-[320px] max-w-none origin-top transform-gpu rounded-xl border border-gray-200 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-950'
                 >
                   <div className='flex items-center justify-between'>
                     <button
                       type='button'
-                      className='rounded-md p-2 hover:bg-gray-100 dark:hover:bg-slate-900'
+                      className='rounded-md p-2 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-slate-900'
                       onClick={handlePrevMonth}
+                      disabled={atFirstMonth}
                       aria-label={t('ariaLabels.previousMonth')}
                     >
                       <CaretLeftIcon className='size-5' />
@@ -466,8 +509,9 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
                     </div>
                     <button
                       type='button'
-                      className='rounded-md p-2 hover:bg-gray-100 dark:hover:bg-slate-900'
+                      className='rounded-md p-2 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-slate-900'
                       onClick={handleNextMonth}
+                      disabled={atLastMonth}
                       aria-label={t('ariaLabels.nextMonth')}
                     >
                       <CaretRightIcon className='size-5' />
@@ -490,6 +534,8 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
                           key={idx}
                           type='button'
                           disabled={disabled}
+                          aria-label={dayFormatter.format(d)}
+                          aria-pressed={isStart || isEnd}
                           onMouseEnter={() =>
                             setHoverDate(start && !end ? startOfDay(d) : null)
                           }
@@ -550,21 +596,24 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
                       </button>
                     </div>
                   </div>
-                </div>
+                </dialog>
               </TransitionChild>
             </div>
           ) : (
             // Anchored popover (toolbar usage)
             <div className='absolute top-7 right-0 z-50 origin-top-right transform-gpu'>
-              <div
+              <dialog
+                open
                 ref={popoverRef}
-                className='w-[320px] rounded-xl border border-gray-200 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-950'
+                aria-label={t('analyticsUi.selectDateRange')}
+                className='relative m-0 w-[320px] max-w-none rounded-xl border border-gray-200 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-950'
               >
                 <div className='flex items-center justify-between'>
                   <button
                     type='button'
-                    className='rounded-md p-2 hover:bg-gray-100 dark:hover:bg-slate-900'
+                    className='rounded-md p-2 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-slate-900'
                     onClick={handlePrevMonth}
+                    disabled={atFirstMonth}
                     aria-label={t('ariaLabels.previousMonth')}
                   >
                     <CaretLeftIcon className='size-5' />
@@ -625,8 +674,9 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
                   </div>
                   <button
                     type='button'
-                    className='rounded-md p-2 hover:bg-gray-100 dark:hover:bg-slate-900'
+                    className='rounded-md p-2 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-slate-900'
                     onClick={handleNextMonth}
+                    disabled={atLastMonth}
                     aria-label={t('ariaLabels.nextMonth')}
                   >
                     <CaretRightIcon className='size-5' />
@@ -649,6 +699,8 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
                         key={idx}
                         type='button'
                         disabled={disabled}
+                        aria-label={dayFormatter.format(d)}
+                        aria-pressed={isStart || isEnd}
                         onMouseEnter={() =>
                           setHoverDate(start && !end ? startOfDay(d) : null)
                         }
@@ -709,7 +761,7 @@ const DatePicker = forwardRef<DatePickerHandle, DatePickerProps>(
                     </button>
                   </div>
                 </div>
-              </div>
+              </dialog>
             </div>
           )}
         </Transition>
