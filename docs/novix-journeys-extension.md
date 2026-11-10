@@ -56,4 +56,16 @@ Novix 私有项目在原访问旅程菜单内显示路径列表、流向图及�
 
 浏览器及 JSX 表达式复验继续补齐版本展开/收起、日期选择占位和密码显隐按钮的无障碍标签；日期选择器的月份/星期此前已使用 Intl。只改显示文案，未修改密码值、筛选条件或版本展开行为。
 
-开发验证：28 项前端回归、完整 typecheck、客户端/SSR 构建与样式清单通过；lint 零错误。BFF 97 项回归通过，新镜像先用 Staging 项目通过 7d/12M/24M、明细/转化/用户接口及业务报表长范围拒绝验收。实际 Production 页面已显示 24M 正确起止范围与完整路径列表。完整 UI 回归将验证地图和图表悬浮提示的中英文切换。
+开发验证：28 项前端回归、完整 typecheck、客户端/SSR 构建与样式清单通过；lint 零错误。BFF 97 项回归通过，新镜像先用 Staging 项目通过 7d/12M/24M、明细/转化/用户接口及业务报表长范围拒绝验收。实际 Production 页面已显示 24M 正确起止范围与完整路径列表。
+
+## 2026-11-10 长期范围与国际化已上线
+
+独立 BFF `novix/business-analytics:20261110.3`，源码 `dfbd1de8ea233e87bb2c9063aae27a4c32f60c40`，镜像 ID `sha256:2df06ebbe824b02f9b6a19726c0b62a76e0b50b45fae53150ac14781abe6e3c9`。新镜像先以独立容器跑真实 Staging 私有会话验收，再替换运行服务。通过公网同源接口复验两个项目的 24M/12M/7d：六次请求全部 200，约 0.156–0.382 秒；匿名 401、跨域 403。仅旅程读取放宽日期，未修改业务库权限或运行 Novix 业务服务发布。
+
+前端 `novix/swetrix-fe:5.5.3-novix-analytics.13`，源码 `987dc09d766a970cfd6dbe0bd4b34535c3066011`，镜像 ID `sha256:780ef347fa14f0fa8e308595c498df76b4a5bfdb06401c0ad4b9597d25081835`。容器健康、零重启；数据库、API、Redis、网关等其他容器 ID 未变化。预构建的 .12 未切换为运行版本。
+
+[完整对应源码](https://api-analytics.novix.science/source/swetrix-fe-5.5.3-novix-analytics.13-source.tar.gz) 33793431 bytes，SHA256 `95bfa5bb2c59f842f654f9458a4209e5b487ba2789fadb31ed87d0a93ec6209b`；已实际下载并核对公开 /source 元数据、完整归档、源码及镜像。
+
+真实浏览器验收：同一 Staging 图表中文浮窗“11月4日 14:00”，英文“04 Nov 14:00”；地图中文“中国大陆 / 18 (52.9%) 访客”，英文“Mainland China / 18 (52.9%) Visitors”。版本按钮随语言显示“展开版本 / Expand versions”。恢复中文后保留 Production 的 24M 路径列表，日期菜单明确包含 12M、24M，两个页面控制台均无错误。截图：`/tmp/novix-analytics-chart-date-zh-20261110.jpg`、`/tmp/novix-analytics-chart-date-en-20261110.jpg`、`/tmp/novix-analytics-map-tooltip-zh-20261110.jpg`、`/tmp/novix-journeys-24-months-fixed-20261110.jpg`。
+
+本轮知识缺口是跨菜单继承日期绕过选项过滤，以及图表内部日期格式未接入语言；约定和验收样例保留在本扩展文档与对应测试中。以后先复验完整原生日期桥接和实际悬浮提示，避免把界面翻译文件齐全当成图表国际化完成；不另建通用 skill 或本机记忆。两仓库继续使用当前开发分支并 push，未将本轮 Novix 变更合入 main。
