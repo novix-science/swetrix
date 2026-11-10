@@ -3,6 +3,8 @@
   "list": "Path list",
   "flow": "Flow diagram",
   "conversion": "Path conversion",
+  "original": "Original view",
+  "originalHint": "Original Swetrix Sankey diagram and path table. This view uses raw page paths and multi-page sessions; counts differ from the new views, which include single-page visits and grouped detail pages. For a specific user's paths, use Path list, Flow diagram or Path conversion.",
   "allUsers": "All users",
   "user": "User",
   "search": "Find user",

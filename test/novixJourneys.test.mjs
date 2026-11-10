@@ -60,6 +60,19 @@ test('selected paths reject corrupt links and preserve valid canonical sequences
   assert.deepEqual(model.readSelectedPath('["/chat","/deepsurvey","/chat"]'), ['/chat', '/deepsurvey', '/chat'])
 })
 
+test('view switching retains original chart/table links and explicit new-view choices', () => {
+  const params = new URLSearchParams({ view: 'table', journeyProfile: 'usr_novix-user-42' })
+  assert.equal(model.readJourneyView(params), 'original')
+  params.set('view', 'chart')
+  assert.equal(model.readJourneyView(params), 'original')
+  for (const view of ['list', 'flow', 'conversion', 'original']) {
+    params.set('journeyView', view)
+    assert.equal(model.readJourneyView(params), view)
+  }
+  assert.equal(model.readJourneyView(new URLSearchParams()), 'list')
+  assert.equal(model.readJourneyView(new URLSearchParams({ journeyView: 'unknown' })), 'list')
+})
+
 test('journeys use effective native date filters, exact custom bounds and an independent user scope', () => {
   const searchParams = new URLSearchParams({ period: '12M', timezone: 'UTC', filters: 'ignored', journeyProfile: 'usr_novix-user-42', from: '2026-11-01T00:00:00Z', to: '2026-11-02T23:59:59Z' })
   const query = api.journeyQuery({ searchParams, period: 'custom', timeBucket: 'hour', timezone: 'Asia/Shanghai' })

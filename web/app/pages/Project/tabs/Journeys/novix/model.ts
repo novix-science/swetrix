@@ -1,10 +1,26 @@
 import en from './en.json'
 import zh from './zh.json'
-import type { JourneyLanguage, JourneyPath } from './types'
+import type { JourneyLanguage, JourneyPath, JourneyView } from './types'
 
 export const labelsFor = (language: JourneyLanguage) =>
   language === 'zh' ? zh : en
 export type JourneyLabels = typeof en
+
+export function readJourneyView(params: URLSearchParams): JourneyView {
+  const view = params.get('journeyView')
+  if (
+    view === 'list' ||
+    view === 'flow' ||
+    view === 'conversion' ||
+    view === 'original'
+  ) {
+    return view
+  }
+  const originalView = params.get('view')
+  return originalView === 'chart' || originalView === 'table'
+    ? 'original'
+    : 'list'
+}
 
 export function routeColour(route: string): string {
   if (route.startsWith('__')) return '#64748b'

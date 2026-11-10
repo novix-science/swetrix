@@ -4,6 +4,10 @@ Novix 私有项目在原访问旅程菜单内显示路径列表、流向图及�
 
 界面复用 DashboardHeader、Select、Input、Button、ThemeProvider、Nivo 及原生日期解析结果。用户/视图/规范路径通过 URL 状态保存，TanStack Query 按项目、日期、用户及完整路径隔离缓存。列表默认深度五页、每页二十条，流向图最多一百条，始终显示已展示访问占全部访问的比例。
 
+“原版视图”直接复用官方 JourneysView，保留原有桑基图/路径表格、页面筛选、节点交互与会话抽屉，不复制官方实现。原版按原始页面地址和多页面会话统计；新版归并动态详情页并包含单页访问，两者口径在页面上明确区分。原版不应用新版指定用户过滤；切回新版保留原先用户选择。旧 `view=chart|table` 链接进入原版，显式 `journeyView` 优先；未指定视图仍默认新版路径列表。原版只挂载官方查询，新版只挂载 BFF 查询。
+
+本轮修正同时限定页面深度 Select 最小宽度和选项不换行，不改通用 Select 的其他调用。验证：25 项回归、完整 typecheck、客户端/SSR 构建与样式清单、新模块 lint 和格式检查通过；ViewProject lint 的两处既有 effect 警告不在本轮修改范围。线上菜单选项修正前宽 44px，数字 10 标签高 40px（两行），将在发布后复验实际布局。
+
 数据来自 Novix monorepo 的 Node BFF 同源 `/novix/api/v1/projects/{pid}/journeys/`，不直接读取业务库，不改官方 Swetrix analytics API：
 
 - paths：规范路径排名、访问/用户总量与覆盖。

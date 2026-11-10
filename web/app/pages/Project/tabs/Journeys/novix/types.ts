@@ -74,5 +74,5 @@ export interface JourneyUsers extends JourneyBase {
   hasMore: boolean
 }
 
-export type JourneyView = 'list' | 'flow' | 'conversion'
+export type JourneyView = 'list' | 'flow' | 'conversion' | 'original'
 export type JourneyLanguage = 'en' | 'zh'

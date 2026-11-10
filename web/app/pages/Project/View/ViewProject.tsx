@@ -1626,7 +1626,10 @@ const ViewProjectContent = () => {
                             ) : null}
                             {activeTab === PROJECT_TABS.journeys ? (
                               businessEnabled ? (
-                                <NovixJourneysView projectId={id} />
+                                <NovixJourneysView
+                                  projectId={id}
+                                  tnMapping={tnMapping}
+                                />
                               ) : (
                                 <JourneysView tnMapping={tnMapping} />
                               )

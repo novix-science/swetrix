@@ -12,9 +12,17 @@ import Button from '~/ui/Button'
 import Loader from '~/ui/Loader'
 import Select from '~/ui/Select'
 
+import JourneysView from '../JourneysView'
+
 import { journeyQuery, readJourney } from './api'
 import JourneyVisits, { Pagination } from './JourneyVisits'
-import { labelsFor, percent, readSelectedPath } from './model'
+import {
+  labelsFor,
+  percent,
+  readJourneyView,
+  readSelectedPath,
+  type JourneyLabels,
+} from './model'
 import {
   ConversionTable,
   JourneyFlow,
@@ -40,11 +48,72 @@ const supportedPeriods = new Set([
   'custom',
 ])
 
+function JourneyViewTabs({
+  view,
+  labels: l,
+  onChange,
+}: {
+  view: JourneyView
+  labels: JourneyLabels
+  onChange: (view: JourneyView) => void
+}) {
+  return (
+    <fieldset
+      className='inline-flex min-w-0 flex-wrap gap-1 rounded-lg bg-gray-100 p-1 dark:bg-slate-900'
+      aria-label={l.title}
+    >
+      {(['list', 'flow', 'conversion', 'original'] as const).map((value) => (
+        <Button
+          key={value}
+          size='sm'
+          variant={view === value ? 'white' : 'ghost'}
+          aria-pressed={view === value}
+          onClick={() => onChange(value)}
+        >
+          {l[value]}
+        </Button>
+      ))}
+    </fieldset>
+  )
+}
+
 export default function NovixJourneysView({
   projectId,
+  tnMapping,
 }: {
   projectId: string
+  tnMapping: Record<string, string>
 }) {
+  const { i18n } = useTranslation('common')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const l = labelsFor(
+    (i18n.resolvedLanguage || i18n.language).startsWith('zh') ? 'zh' : 'en',
+  )
+  if (readJourneyView(searchParams) !== 'original') {
+    return <NovixJourneyReport projectId={projectId} />
+  }
+  return (
+    <>
+      <div className='mb-5'>
+        <JourneyViewTabs
+          view='original'
+          labels={l}
+          onChange={(view) => {
+            const params = new URLSearchParams(searchParams)
+            params.set('journeyView', view)
+            setSearchParams(params, { preventScrollReset: true })
+          }}
+        />
+        <p className='mt-3 text-sm leading-relaxed text-gray-500 dark:text-gray-400'>
+          {l.originalHint}
+        </p>
+      </div>
+      <JourneysView tnMapping={tnMapping} />
+    </>
+  )
+}
+
+function NovixJourneyReport({ projectId }: { projectId: string }) {
   const { i18n } = useTranslation('common')
   const language: JourneyLanguage = (
     i18n.resolvedLanguage || i18n.language
@@ -63,11 +132,7 @@ export default function NovixJourneysView({
   const baseQuery = base.toString()
   const selectedPath = readSelectedPath(searchParams.get('journeyPath'))
   const selectedKey = JSON.stringify(selectedPath)
-  const requestedView = searchParams.get('journeyView')
-  const view: JourneyView =
-    requestedView === 'flow' || requestedView === 'conversion'
-      ? requestedView
-      : 'list'
+  const view = readJourneyView(searchParams)
   const [pagination, setPagination] = useState({ query: '', skip: 0 })
   const skip = pagination.query === baseQuery ? pagination.skip : 0
   const setSkip = (value: number) =>
@@ -155,23 +220,14 @@ export default function NovixJourneysView({
         }}
       />
       <div className='mb-5 flex flex-wrap items-end justify-between gap-3'>
-        <fieldset
-          className='inline-flex min-w-0 flex-wrap gap-1 rounded-lg bg-gray-100 p-1 dark:bg-slate-900'
-          aria-label={l.title}
-        >
-          {(['list', 'flow', 'conversion'] as const).map((value) => (
-            <Button
-              key={value}
-              size='sm'
-              variant={view === value ? 'white' : 'ghost'}
-              aria-pressed={view === value}
-              onClick={() => update({ journeyView: value })}
-            >
-              {l[value]}
-            </Button>
-          ))}
-        </fieldset>
+        <JourneyViewTabs
+          view={view}
+          labels={l}
+          onChange={(value) => update({ journeyView: value })}
+        />
         <Select
+          className='min-w-24'
+          labelClassName='whitespace-nowrap'
           title={String(depth)}
           label={l.depth}
           items={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
