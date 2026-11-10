@@ -38,6 +38,7 @@ interface Cohort {
 
 export interface ProductReport {
   schemaVersion: 1
+  filters?: { feature?: string }
   environment: string
   snapshotAt: string
   resolvedRange: BusinessRange

@@ -28,17 +28,23 @@ import {
 } from '~/providers/CurrentProjectProvider'
 import type { ProjectViewActionData } from '~/routes/projects.$id'
 import { Text } from '~/ui/Text'
+import { BUSINESS_FUNNEL_PERIODS, getNovixFunnel } from '~/utils/novixFunnels'
 
 import { SessionsDrawer } from '../Traffic/SessionsDrawer'
 import FunnelEmptyStateAction from './FunnelEmptyStateAction'
+import BusinessFunnelPresets from './BusinessFunnelPresets'
 
 interface FunnelsViewProps {
   tnMapping: Record<string, string>
+  businessEnabled?: boolean
 }
 
 const FUNNELS_DOCS_URL = `${DOCS_URL}/analytics-dashboard/funnels`
 
-const FunnelsView = ({ tnMapping }: FunnelsViewProps) => {
+const FunnelsView = ({
+  tnMapping,
+  businessEnabled = false,
+}: FunnelsViewProps) => {
   const { id, projectPath, project, mergeProject, allowedToManage } =
     useCurrentProject()
   const projectPassword = useProjectPassword(id)
@@ -47,6 +53,8 @@ const FunnelsView = ({ tnMapping }: FunnelsViewProps) => {
     useViewProjectContext()
   const { t } = useTranslation('common')
   const [searchParams, setSearchParams] = useSearchParams()
+  const businessActive =
+    businessEnabled && Boolean(getNovixFunnel(searchParams))
   const queryClient = useQueryClient()
   const fetcher = useFetcher<ProjectViewActionData>()
   const lastHandledData = useRef<ProjectViewActionData | null>(null)
@@ -62,12 +70,14 @@ const FunnelsView = ({ tnMapping }: FunnelsViewProps) => {
 
   const timeBucketSelectorItems = useMemo(() => {
     return _filter(periodPairs, (el) => {
-      return _includes(FUNNELS_PERIOD_PAIRS, el.period)
+      return businessActive
+        ? BUSINESS_FUNNEL_PERIODS.has(el.period)
+        : _includes(FUNNELS_PERIOD_PAIRS, el.period)
     })
-  }, [periodPairs])
+  }, [periodPairs, businessActive])
 
   const activeFunnel = useMemo(() => {
-    if (!project) {
+    if (!project || businessActive) {
       return null
     }
 
@@ -78,7 +88,7 @@ const FunnelsView = ({ tnMapping }: FunnelsViewProps) => {
     }
 
     return _find(project.funnels, (funnel) => funnel.id === funnelId) || null
-  }, [searchParams, project])
+  }, [searchParams, project, businessActive])
 
   const funnelQuery = useFunnelQuery(activeFunnel?.id ?? null)
 
@@ -122,6 +132,7 @@ const FunnelsView = ({ tnMapping }: FunnelsViewProps) => {
   const handleToggleFunnel = useCallback(
     (funnelId: string) => {
       const nextSearchParams = new URLSearchParams(searchParams.toString())
+      nextSearchParams.delete('novixFunnel')
 
       if (nextSearchParams.get('funnelId') === funnelId) {
         nextSearchParams.delete('funnelId')
@@ -253,12 +264,22 @@ const FunnelsView = ({ tnMapping }: FunnelsViewProps) => {
       resetKey={resetKey}
     >
       <DashboardHeader
-        showLiveVisitors
+        showLiveVisitors={!businessActive}
+        showSearchButton={!businessActive}
+        showComparison={!businessActive}
         hideTimeBucket
         timeBucketSelectorItems={timeBucketSelectorItems}
-        rightContent={<ProjectViewHeaderActions tnMapping={tnMapping} />}
+        rightContent={
+          businessActive ? undefined : (
+            <ProjectViewHeaderActions tnMapping={tnMapping} />
+          )
+        }
       />
-      <Filters className='mb-3' tnMapping={tnMapping} />
+      {!businessActive ? (
+        <Filters className='mb-3' tnMapping={tnMapping} />
+      ) : null}
+
+      {businessEnabled ? <BusinessFunnelPresets projectId={id} /> : null}
 
       {hasFunnels ? (
         <FunnelsList

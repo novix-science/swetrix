@@ -118,6 +118,49 @@ function Cards({
   )
 }
 
+export function FunnelSection({
+  report,
+  labels,
+  language,
+}: {
+  report: Pick<ProductReport, 'funnel'>
+  labels: Labels
+  language: string
+}) {
+  const l = (key: string) => labels[key] || key
+  const n = (value?: Metric) =>
+    value == null || !Number.isFinite(value)
+      ? '—'
+      : new Intl.NumberFormat(language, { maximumFractionDigits: 4 }).format(
+          value,
+        )
+  const rate = (value: Rate) =>
+    `${value.value == null ? l(`metric_${value.availability}`) : `${n(value.value * 100)}%`} (${n(value.numerator)}/${n(value.denominator)})${value.maturity === 'pending' ? ` · ${l('pending')}` : ''}`
+  return (
+    <Panel title={l('funnel')} description={l('funnelDefinition')}>
+      <p className={`${muted} mb-3`}>
+        {l(`metric_${report.funnel.availability}`)} · {l('pendingUsers')}{' '}
+        {n(report.funnel.pendingUsers)}
+      </p>
+      <Table
+        title={l('funnel')}
+        columns={[
+          'stage',
+          'actors',
+          'previousConversion',
+          'overallConversion',
+        ].map(l)}
+        rows={report.funnel.steps.map((row) => [
+          l(`funnel_${row.id}`),
+          n(report.funnel.availability === 'unavailable' ? null : row.users),
+          rate(row.fromPrevious),
+          rate(row.fromFirst),
+        ])}
+      />
+    </Panel>
+  )
+}
+
 export function ProductSections({
   report,
   labels,
@@ -366,27 +409,7 @@ export function ProductSections({
           {l('durationMissing')} {n(delivery.duration.missing)}
         </p>
       </Panel>
-      <Panel title={l('funnel')} description={l('funnelDefinition')}>
-        <p className={`${muted} mb-3`}>
-          {l(`metric_${report.funnel.availability}`)} · {l('pendingUsers')}{' '}
-          {n(report.funnel.pendingUsers)}
-        </p>
-        <Table
-          title={l('funnel')}
-          columns={[
-            'stage',
-            'actors',
-            'previousConversion',
-            'overallConversion',
-          ].map(l)}
-          rows={report.funnel.steps.map((row) => [
-            l(`funnel_${row.id}`),
-            n(report.funnel.availability === 'unavailable' ? null : row.users),
-            rate(row.fromPrevious),
-            rate(row.fromFirst),
-          ])}
-        />
-      </Panel>
+      <FunnelSection report={report} labels={labels} language={language} />
       <Panel title={l('channels')}>
         <Table
           title={l('channels')}

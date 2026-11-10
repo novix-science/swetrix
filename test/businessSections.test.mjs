@@ -21,7 +21,7 @@ try {
 } finally {
   await server.close();
 }
-const { ProductSections, ResourceSections } = sections;
+const { ProductSections, ResourceSections, FunnelSection } = sections;
 const metric = (html, label, value) => assert.equal(html.match(new RegExp(`aria-label="${label}"[^]*?<span[^>]*>([^<]*)</span>`))?.[1], value);
 const labels = JSON.parse(
   await readFile(
@@ -174,4 +174,23 @@ test("resource panels identify their all-account scope and preserve partial toke
   assert.ok(html.includes('2026-11-02'), 'credit-only dates remain in the trend');
   metric(html, 'Input tokens', '0');
   metric(html, 'Output tokens', '—');
+});
+
+test('business funnel preserves unknown rates and pending conversion windows', () => {
+  const report = { funnel: { availability: 'available', pendingUsers: 2, steps: [
+    { id: 'workspace', users: 0, fromPrevious: rate, fromFirst: rate },
+  ] } };
+  const html = renderToStaticMarkup(React.createElement(FunnelSection, { report, labels, language: 'en' }));
+  assert.match(html, /<td[^>]*>0<\/td>/);
+  assert.ok(html.includes(labels.pending));
+  assert.doesNotMatch(html, /100%/);
+});
+
+test('unsupported business funnel counts stay unknown instead of exposing computed zeros or stale values', () => {
+  const report = { funnel: { availability: 'unavailable', pendingUsers: 0, steps: [
+    { id: 'workspace', users: 987654, fromPrevious: rate, fromFirst: rate },
+  ] } };
+  const html = renderToStaticMarkup(React.createElement(FunnelSection, { report, labels, language: 'en' }));
+  assert.doesNotMatch(html, /987[,.]?654/);
+  assert.match(html, /<td[^>]*>—<\/td>/);
 });

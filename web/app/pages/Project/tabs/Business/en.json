@@ -1,4 +1,7 @@
 {
+  "presetFunnels": "Business flow funnels",
+  "presetCoverageHint": "These funnels include collected data that can be linked to the same operation. Missing historical observations do not imply drop-off or task failure.",
+  "presetFunnelsHint": "Choose a feature to measure entry, submission, backend acceptance, success and result viewing along the same operation chain within seven days. Production excludes internal accounts by default; staging includes them. Native traffic filters do not apply to these presets. Each query supports at most 93 calendar days.",
   "title": "Business analytics",
   "back": "Back to Swetrix",
   "subtitle": "Task records and consumption ledger, queried directly from Novix.",

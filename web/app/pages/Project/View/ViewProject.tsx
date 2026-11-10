@@ -1616,7 +1616,10 @@ const ViewProjectContent = () => {
                               <SEOView projectId={id} tnMapping={tnMapping} />
                             ) : null}
                             {activeTab === PROJECT_TABS.funnels ? (
-                              <FunnelsView tnMapping={tnMapping} />
+                              <FunnelsView
+                                tnMapping={tnMapping}
+                                businessEnabled={businessEnabled}
+                              />
                             ) : null}
                             {activeTab === PROJECT_TABS.journeys ? (
                               <JourneysView tnMapping={tnMapping} />

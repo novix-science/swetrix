@@ -1,0 +1,7 @@
+[
+  {"name":"首页 → 研究工作台","steps":["/","/chat"]},
+  {"name":"任务提交 → 后端受理","steps":["feature_submit_attempted","feature_use_accepted"]},
+  {"name":"任务受理 → 结果查看","steps":["feature_use_accepted","feature_result_viewed"]},
+  {"name":"工作台 → 套餐升级页","steps":["/chat","/account/upgrade"]},
+  {"name":"工作台 → 额度详情页","steps":["/chat","/account/credit"]}
+]
