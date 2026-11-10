@@ -87,6 +87,7 @@ export default function UnifiedTrafficView({
     const next = new URLSearchParams(params)
     next.set('novix_live', '1')
     next.set('period', 'today')
+    next.set('host', 'novix.science')
     next.delete('from')
     next.delete('to')
     setParams(next)
@@ -142,6 +143,12 @@ export default function UnifiedTrafficView({
         </div>
         <form
           className='flex flex-wrap items-end gap-3'
+          onInput={(e) => {
+            const end = e.currentTarget.elements.namedItem(
+              'end',
+            ) as HTMLInputElement
+            end.setCustomValidity('')
+          }}
           onSubmit={(e) => {
             e.preventDefault()
             const form = e.currentTarget
@@ -169,7 +176,6 @@ export default function UnifiedTrafficView({
             min={FIRST_HISTORY_DAY}
             max={latest}
             required
-            onInput={(e) => e.currentTarget.setCustomValidity('')}
           />
           <Input
             type='date'
@@ -179,7 +185,6 @@ export default function UnifiedTrafficView({
             min={FIRST_HISTORY_DAY}
             max={latest}
             required
-            onInput={(e) => e.currentTarget.setCustomValidity('')}
           />
           <Button type='submit'>{zh ? '应用' : 'Apply'}</Button>
           <span className='pb-2 text-sm text-gray-500'>
