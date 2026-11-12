@@ -3,20 +3,26 @@ import { FunnelIcon } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 
-import { FunnelSection } from '../Business/BusinessSections'
+import BusinessFlowFunnels from './BusinessFlowFunnels'
+import { readFlowReport } from './report'
 import en from '../Business/en.json'
-import { readReport, ReportError } from '../Business/report'
-import type { Labels, ProductReport } from '../Business/types'
+import { ReportError } from '../Business/report'
+import type { Labels } from '../Business/types'
 import zh from '../Business/zh.json'
 import { useViewProjectContext } from '../../View/ViewProject'
 import Button from '~/ui/Button'
 import Loader from '~/ui/Loader'
+import Select from '~/ui/Select'
 import {
   BUSINESS_FUNNEL_PERIODS,
   NOVIX_FUNNEL_PRESETS,
+  FUNNEL_FILTER_OPTIONS,
   businessFunnelQuery,
   getNovixFunnel,
+  readFlowFunnels,
+  readFunnelFilters,
   selectNovixFunnel,
+  updateFunnelFilter,
 } from '~/utils/novixFunnels'
 
 export default function BusinessFunnelPresets({
@@ -33,6 +39,7 @@ export default function BusinessFunnelPresets({
   const [searchParams, setSearchParams] = useSearchParams()
   const { period, timeBucket, timezone } = useViewProjectContext()
   const preset = getNovixFunnel(searchParams)
+  const filters = readFunnelFilters(searchParams)
   const query = preset
     ? businessFunnelQuery({
         searchParams,
@@ -43,24 +50,18 @@ export default function BusinessFunnelPresets({
       }).toString()
     : ''
   const report = useQuery({
-    queryKey: ['v2', projectId, 'funnel', 'novix', query],
+    queryKey: ['v2', projectId, 'funnel', 'novix-flow-v1', query],
     enabled: Boolean(preset) && BUSINESS_FUNNEL_PERIODS.has(period),
     staleTime: 30_000,
     retry: false,
     refetchOnWindowFocus: false,
     queryFn: async ({ signal }) => {
-      const result = await readReport<ProductReport>(
-        `/novix/api/v1/projects/${encodeURIComponent(projectId)}/product/report?${query}`,
+      if (!preset) throw new ReportError(502, 'invalid_report')
+      return readFlowReport(
+        `/novix/api/v1/projects/${encodeURIComponent(projectId)}/product/flows?${query}`,
+        preset.id,
         signal,
       )
-      if (
-        result.filters?.feature !== preset?.id ||
-        result.funnel?.steps?.map((step) => step.id).join(',') !==
-          'workspace,submit,accepted,success,viewed'
-      ) {
-        throw new ReportError(502, 'invalid_report')
-      }
-      return result
     },
   })
   const error =
@@ -104,6 +105,42 @@ export default function BusinessFunnelPresets({
           <h3 className='mb-2 text-base font-semibold text-gray-900 dark:text-gray-50'>
             {preset.label}
           </h3>
+          <div className='mb-4 grid gap-3 sm:grid-cols-2 lg:max-w-xl'>
+            {(
+              Object.keys(
+                FUNNEL_FILTER_OPTIONS,
+              ) as (keyof typeof FUNNEL_FILTER_OPTIONS)[]
+            ).map((key) => {
+              const choices = FUNNEL_FILTER_OPTIONS[key].map((value) => ({
+                value,
+                label:
+                  value === ''
+                    ? l('environmentDefault')
+                    : value === 'cpu' || value === 'gpu'
+                      ? value.toUpperCase()
+                      : l(value),
+              }))
+              const selected = choices.find(
+                (item) => item.value === filters[key],
+              )
+              return (
+                <Select
+                  key={key}
+                  label={l(key)}
+                  title={selected?.label}
+                  items={choices}
+                  selectedItem={selected}
+                  keyExtractor={(item) => item.value}
+                  labelExtractor={(item) => item.label}
+                  onSelect={(item) =>
+                    setSearchParams(
+                      updateFunnelFilter(searchParams, key, item.value),
+                    )
+                  }
+                />
+              )
+            })}
+          </div>
           {report.isFetching ? (
             <Loader className='py-5' label={l('loading')} showLabel />
           ) : null}
@@ -118,7 +155,7 @@ export default function BusinessFunnelPresets({
               </Button>
             </div>
           ) : null}
-          {report.data ? (
+          {report.data && !report.isFetching && !report.error ? (
             <>
               <p className='mb-3 text-xs text-gray-500 dark:text-gray-400'>
                 {l(report.data.environment)} · {l('snapshot')}{' '}
@@ -128,8 +165,8 @@ export default function BusinessFunnelPresets({
                   timeStyle: 'short',
                 }).format(new Date(report.data.snapshotAt))}
               </p>
-              <FunnelSection
-                report={report.data}
+              <BusinessFlowFunnels
+                paths={readFlowFunnels(report.data, preset.id)}
                 labels={labels}
                 language={language}
               />

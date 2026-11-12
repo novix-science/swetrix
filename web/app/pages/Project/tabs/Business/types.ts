@@ -1,6 +1,48 @@
 export type Metric = number | null
 export type Labels = Record<string, string>
 
+export type FlowAvailability = 'available' | 'partial' | 'unavailable'
+
+export interface FlowFunnel {
+  id: string
+  featureId: string
+  labelKey: string
+  unit: 'visits' | 'proposals'
+  window: '7x24h'
+  availability: FlowAvailability
+  pending: boolean
+  coverage: {
+    missingEvents: string[]
+    excluded: number
+    limitations?: string[]
+  }
+  outcomes: {
+    failed: number
+    cancelled: number
+    timedOut: number
+    blocked: number
+    unconfirmed: number
+    decisionFailed: number
+  }
+  exits: { route: string; count: number }[]
+  steps: {
+    id: string
+    count: Metric
+    fromPrevious: Metric
+    fromFirst: Metric
+    availability: FlowAvailability
+  }[]
+}
+
+export interface FlowFunnelReport {
+  schemaVersion: 1
+  filters: { feature: string; computeType?: string; internalTraffic?: string }
+  environment: string
+  snapshotAt: string
+  resolvedRange: BusinessRange
+  flowFunnels: { version: 1; paths: FlowFunnel[] }
+}
+
 export interface Rate {
   value: Metric
   numerator: number
@@ -46,7 +88,7 @@ interface Cohort {
 
 export interface ProductReport {
   schemaVersion: 1
-  filters?: { feature?: string }
+  filters?: { feature?: string; computeType?: string; internalTraffic?: string }
   environment: string
   snapshotAt: string
   resolvedRange: BusinessRange
@@ -104,6 +146,7 @@ export interface ProductReport {
     pendingUsers: number
     steps: { id: string; users: number; fromPrevious: Rate; fromFirst: Rate }[]
   }
+  flowFunnels?: { version: 1; paths: FlowFunnel[] }
   channels: {
     source: string
     medium: string
