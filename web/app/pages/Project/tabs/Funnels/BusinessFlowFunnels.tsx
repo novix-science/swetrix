@@ -59,7 +59,7 @@ export default function BusinessFlowFunnels({
                 →{' '}
                 {count(last.availability === 'unavailable' ? null : last.count)}
                 <span className='mt-1 block text-xs text-gray-500 dark:text-gray-400'>
-                  {l('overallConversion')}{' '}
+                  {l('flowObservedFromFirst')}{' '}
                   {rate(
                     last.availability === 'unavailable' ? null : last.fromFirst,
                   )}
@@ -91,8 +91,8 @@ export default function BusinessFlowFunnels({
                         l('stage'),
                         unit,
                         l('flowRelativeVolume'),
-                        l('previousConversion'),
-                        l('overallConversion'),
+                        l('flowObservedFromPrevious'),
+                        l('flowObservedFromFirst'),
                         l('flowCollection'),
                       ].map((label) => (
                         <th

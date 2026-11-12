@@ -59,6 +59,26 @@ test('step coverage keeps unknown counts and rates distinct from collected zero 
   assert.ok(html.includes(labels.flowExcluded))
 })
 
+test('pending funnels label positive ratios as observed conversions and explain unknown pending stages', async () => {
+  const item = path()
+  item.steps[item.steps.length - 1] = { id: 'result', count: 1, fromPrevious: .2, fromFirst: .05, availability: 'available' }
+  for (const [language, fromFirst, fromPrevious, growth, unknown] of [
+    ['en', 'Observed conversion from entry', 'Observed conversion from previous', 'may increase within the observation window', 'Pending stages with no observations remain unknown'],
+    ['zh', '已观察转化（入口）', '已观察转化（相邻阶段）', '观察窗口内仍可增长', '尚无观测的待观察阶段显示未知'],
+  ]) {
+    const labels = await labelsFor(language)
+    const html = render([item], labels, language)
+    assert.ok(html.split('</summary>')[0].includes(fromFirst), fromFirst)
+    assert.match(html, new RegExp(`${fromPrevious}</th>`))
+    assert.ok(html.includes(growth), growth)
+    assert.ok(html.includes(unknown), unknown)
+    assert.match(html, /25%/)
+    assert.match(html, /5%/)
+    assert.ok(html.includes(labels.pending))
+    assert.match(html, new RegExp(`<td[^>]*>${labels.unknown}</td>`))
+  }
+})
+
 test('Not Now displays the proposal skip path and Chinese collection labels', async () => {
   const labels = await labelsFor('zh')
   const item = { ...path(), id: 'auto_discovery.proposal_skip', featureId: 'auto_discovery', labelKey: 'flow_proposal_skip', unit: 'proposals' }
