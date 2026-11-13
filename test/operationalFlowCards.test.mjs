@@ -95,3 +95,13 @@ test('Auto-Discovery exposes fourteen independent operational paths without scie
     assert.doesNotMatch(html, /Auto mode distribution|Auto 模式分流|flowStep_|op_roam/)
   }
 })
+
+test('Discovery operational entries use the feature visit while Landing keeps its workspace destination', async () => {
+  for (const [language, entry, workspace] of [['en', 'Auto-Discovery reached', 'Workspace arrival'], ['zh', '进入 Auto-Discovery', '到达工作台']]) {
+    const discovery = await render(operationalReport('auto_discovery'), 'auto_discovery', language)
+    assert.equal((discovery.match(new RegExp(`>${entry}</th>`, 'g')) || []).length, 10)
+    assert.ok(!discovery.includes(workspace))
+    const landing = await render(operationalReport('auto_pilot'), 'auto_pilot', language)
+    assert.ok(landing.includes(`>${workspace}</th>`))
+  }
+})
