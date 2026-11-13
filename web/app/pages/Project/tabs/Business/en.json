@@ -177,7 +177,7 @@
   "retention": "First-use retention",
   "overallRetention": "Overall first-use retention",
   "retentionFiltersHint": "Compute and account filters apply",
-  "overallRetentionDefinition": "D0 is each account's first backend-accepted task across all features in retained history. D7/D14 count accepted-task returns on day 7/14. D1–DN counts any return from day 1 through day N. Only complete target calendar days enter the denominator.",
+  "overallRetentionDefinition": "D0 is each account's first backend-accepted task across all features in retained history. D7/D14 count accepted-task returns on day 7/14. D1–DN counts any return from day 1 through day N. Only complete target calendar days enter the denominator. The date filter selects first-use dates. Choose an earlier range such as the last 4 weeks to include completed D7/D14 observations.",
   "retentionDefinition": "D0 is the first accepted use across retained history. Exact-day and cumulative return are separate. Only complete target days enter the denominator.",
   "day": "Day",
   "exactRetention": "Exact-day return",
