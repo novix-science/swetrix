@@ -48,6 +48,15 @@ const dataState = {
   unavailable: '缺少记录',
 }
 
+function MetricValue({ value, unit }: { value: number | null; unit: string }) {
+  return (
+    <>
+      {n(value)}
+      <small className='nv-metric-unit'>({unit})</small>
+    </>
+  )
+}
+
 function FlowReport({
   paths,
   range,
@@ -79,7 +88,7 @@ function FlowReport({
   const last = steps[steps.length - 1]
   const rate = stageRate(last, baseline)
   const definition = stageDefinition(path, active.id)
-  const unit = path.unit === 'visits' ? '次访问' : '张提案'
+  const unit = path.unit === 'visits' ? '会话数' : '提案数'
   const max = steps[0].count || 1
   return (
     <>
@@ -149,7 +158,9 @@ function FlowReport({
                       <small>{dataState[step.availability]}</small>
                     ) : null}
                   </span>
-                  <strong>{n(step.count)}</strong>
+                  <strong>
+                    <MetricValue value={step.count} unit={unit} />
+                  </strong>
                   <span className='nv-stage-rate'>
                     {index ? p(stageRate(step, steps[index - 1])) : '起点'}
                   </span>
@@ -169,8 +180,7 @@ function FlowReport({
           </p>
           <h3>{definition.label}</h3>
           <p className='nv-detail-number'>
-            {n(active.count)}
-            <small>{unit}</small>
+            <MetricValue value={active.count} unit={unit} />
           </p>
           <p>{definition.description}</p>
           <div className='nv-condition'>
@@ -203,7 +213,8 @@ function FlowReport({
         <div className='nv-rate-value'>
           <strong>{p(rate)}</strong>
           <p>
-            {n(last.count)} ÷ {n(baseline.count)}
+            <MetricValue value={last.count} unit={unit} /> ÷{' '}
+            <MetricValue value={baseline.count} unit={unit} />
           </p>
         </div>
         <p>
@@ -235,7 +246,9 @@ function FlowReport({
                   <th>
                     {step.id} · {stageDefinition(path, step.id).label}
                   </th>
-                  <td>{n(step.count)}</td>
+                  <td>
+                    <MetricValue value={step.count} unit={unit} />
+                  </td>
                   <td>{dataState[step.availability]}</td>
                 </tr>
               ))}
@@ -289,11 +302,24 @@ export function ReportContent({
   const rows = history.rows
   const pv = rows.reduce((total, row) => total + row.pageviews, 0)
   const sourceTotals = rows.reduce<
-    Partial<Record<(typeof rows)[number]['source'], number>>
+    Partial<
+      Record<
+        (typeof rows)[number]['source'],
+        { total: number; start: string; end: string }
+      >
+    >
   >((totals, row) => {
-    totals[row.source] = (totals[row.source] || 0) + row.pageviews
+    const previous = totals[row.source]
+    totals[row.source] = {
+      total: (previous?.total || 0) + row.pageviews,
+      start: previous?.start || row.date,
+      end: row.date,
+    }
     return totals
   }, {})
+  const importedSources = Object.keys(sourceTotals)
+    .filter((source) => source !== 'swetrix')
+    .map((source) => sourceName[source as keyof typeof sourceName])
   const maxPV = Math.max(1, ...rows.map((row) => row.pageviews))
   const day =
     rows.find((row) => row.date === selectedDay) || rows[rows.length - 1]
@@ -373,14 +399,23 @@ export function ReportContent({
           </div>
           <div className='nv-primary-metric'>
             <p>近 30 天页面浏览量</p>
-            <strong>{n(pv)}</strong>
-            <p>PV · 历史与新增流量合并</p>
+            <strong>
+              <MetricValue value={pv} unit='PV' />
+            </strong>
+            <p>页面浏览次数 · 历史与新增流量合并</p>
             <div className='nv-source-totals'>
-              {Object.entries(sourceTotals).map(([source, total]) => (
-                <span key={source}>
-                  <i className={`nv-source-dot nv-${source}`} />
-                  {sourceName[source as keyof typeof sourceName]}{' '}
-                  <b>{n(total!)}</b>
+              {Object.entries(sourceTotals).map(([source, coverage]) => (
+                <span key={source} className='nv-source-total'>
+                  <span>
+                    <i className={`nv-source-dot nv-${source}`} />
+                    {sourceName[source as keyof typeof sourceName]}{' '}
+                    <b>
+                      <MetricValue value={coverage!.total} unit='PV' />
+                    </b>
+                  </span>
+                  <small>
+                    {coverage!.start} — {coverage!.end}
+                  </small>
                 </span>
               ))}
             </div>
@@ -422,9 +457,13 @@ export function ReportContent({
         <div className='nv-scope-strip'>
           <span aria-hidden>i</span>
           <p>
-            <strong>历史流量覆盖 30 天，行为明细覆盖实际采集期。</strong>{' '}
+            <strong>流量汇总与功能行为的覆盖时间不同。</strong>{' '}
+            {importedSources.length
+              ? `${importedSources.join('、')} 的历史导入保留流量汇总，缺少将每次访问关联到后续功能使用的完整明细。`
+              : ''}
             路径与研究流程明细从 11 月 9
-            日开始，历史聚合流量无法还原同样的逐步路径。今日数据仍会增加。
+            日开始采集，后端已有的历史使用记录另行计入功能使用。
+            计算访问到使用的转化率需要相同采集期、身份与筛选范围。今日数据仍会增加。
           </p>
           <a href={reportSourceLink(range, 'traffic')}>复查流量后台 ↗</a>
         </div>
@@ -444,19 +483,30 @@ export function ReportContent({
         </div>
         <div className='nv-journey-metrics'>
           {[
-            [journeys.totalSessions, '次访问'],
-            [journeys.totalUsers, '个观测身份'],
-            [journeys.totalPaths, '种页面路径'],
-          ].map(([value, label]) => (
+            {
+              value: journeys.totalSessions,
+              label: '访问会话数',
+              unit: '会话数',
+            },
+            { value: journeys.totalUsers, label: '去重观测身份', unit: 'UV' },
+            {
+              value: journeys.totalPaths,
+              label: '页面路径种类',
+              unit: '路径数',
+            },
+          ].map(({ value, label, unit }) => (
             <div key={label}>
-              <strong>{n(value as number)}</strong>
+              <strong>
+                <MetricValue value={value} unit={unit} />
+              </strong>
               <span>{label}</span>
             </div>
           ))}
           <p>
-            一次访问可浏览多个页面。
+            来源为 Swetrix 原生页面明细。
             <br />
-            观测身份包含登录与匿名浏览器身份。
+            一次会话可产生多次 PV。UV
+            按登录或匿名浏览器观测身份去重，跨设备或身份变化可能重复。
           </p>
         </div>
         <div className='nv-table-scroll'>
@@ -464,8 +514,8 @@ export function ReportContent({
             <thead>
               <tr>
                 <th>高频页面路径</th>
-                <th>访问次数</th>
-                <th>观测身份</th>
+                <th>访问会话数</th>
+                <th>去重观测身份</th>
                 <th>占全部访问</th>
               </tr>
             </thead>
@@ -491,8 +541,12 @@ export function ReportContent({
                       }}
                     />
                   </th>
-                  <td>{n(path.sessions)}</td>
-                  <td>{n(path.users)}</td>
+                  <td>
+                    <MetricValue value={path.sessions} unit='会话数' />
+                  </td>
+                  <td>
+                    <MetricValue value={path.users} unit='UV' />
+                  </td>
                   <td>{ratio(path.sessions, journeys.totalSessions)}</td>
                 </tr>
               ))}
@@ -606,17 +660,18 @@ export function ReportContent({
             </thead>
             <tbody>
               <tr>
-                <th>页面浏览量 PV</th>
+                <th>页面浏览量 (PV)</th>
                 <td>
                   每天选一个来源，再对 30 天求和。不同来源的采集规则存在差异。
                 </td>
                 <td>
                   11.09 及以前采用导入聚合值，11.10 起使用 Swetrix 中
-                  host=novix.science 的页面访问。历史来源无法统一排除内部流量。
+                  host=novix.science 的页面访问。当前来源和日期见页首，GA4
+                  只在更早的历史区间出现。 历史来源无法统一排除内部流量。
                 </td>
               </tr>
               <tr>
-                <th>访问次数</th>
+                <th>访问会话数 (会话数)</th>
                 <td>
                   优先按原生 sid 归组。缺失 sid 时，按身份与 30
                   分钟无活动间隔切分。
@@ -628,7 +683,7 @@ export function ReportContent({
                 </td>
               </tr>
               <tr>
-                <th>观测身份</th>
+                <th>去重观测身份 (UV)</th>
                 <td>登录身份或匿名浏览器身份去重，身份变化可拆分访问。</td>
                 <td>
                   跨设备与标识变化可能形成多个身份，无法直接换算为注册账号人数。身份数跨日或跨路径求和会重复。

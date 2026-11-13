@@ -83,9 +83,27 @@ test("the rendered report shows backend counts, calculation definitions and sour
   assert.match(html, /100/);
   assert.match(html, /75/);
   assert.match(html, /观测身份/);
+  assert.match(html, /30<small class="nv-metric-unit">\(PV\)<\/small>/);
+  assert.match(html, /100<small class="nv-metric-unit">\(会话数\)<\/small>/);
+  assert.match(html, /70<small class="nv-metric-unit">\(UV\)<\/small>/);
+  assert.match(html, /20<small class="nv-metric-unit">\(路径数\)<\/small>/);
+  assert.match(html, /75<small class="nv-metric-unit">\(会话数\)<\/small>/);
+  assert.match(html, /2026-10-15 — 2026-11-13/);
+  assert.match(html, /Cloudflare 的历史导入保留流量汇总/);
+  assert.match(html, /后端已有的历史使用记录另行计入功能使用/);
+  assert.match(html, /UV 按登录或匿名浏览器观测身份去重/);
   assert.match(html, /history\/unified/);
   assert.match(html, /tab=funnels/);
   assert.doesNotMatch(html, /100%等待|85%.*会等待/);
+  data.product.flowFunnels.paths.push(...flowReport("auto_discovery").flowFunnels.paths);
+  const proposalHtml = renderToStaticMarkup(
+    React.createElement(
+      MemoryRouter,
+      { initialEntries: ["/?report_feature=auto_discovery&report_path=proposal_skip"] },
+      React.createElement(ReportContent, { data, range, refreshing: false, onRefresh() {} }),
+    ),
+  );
+  assert.match(proposalHtml, /0<small class="nv-metric-unit">\(提案数\)<\/small>/);
 });
 
 test("each historical day is counted once and invalid coverage fails visibly", () => {

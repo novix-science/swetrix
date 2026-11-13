@@ -159,6 +159,17 @@
   font-weight: 400;
   font-variant-numeric: tabular-nums;
 }
+.nv-report .nv-metric-unit {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.nv-primary-metric > strong .nv-metric-unit {
+  font-size: 16px;
+}
 .nv-source-totals {
   display: flex;
   flex-wrap: wrap;
@@ -166,11 +177,24 @@
   margin: 22px 0 10px;
   font-size: 10px;
 }
-.nv-source-totals span {
+.nv-source-total {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.nv-source-total > span {
   display: flex;
   align-items: center;
   gap: 5px;
   color: #a6bfc7;
+}
+.nv-source-total > small {
+  color: #8eabb5;
+  font-size: 9px;
+}
+.nv-source-totals .nv-metric-unit {
+  font-size: inherit;
+  margin-left: 3px;
 }
 .nv-source-totals b {
   color: #e3efec;
@@ -488,7 +512,7 @@
 .nv-stage-head,
 .nv-stage {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 65px 63px;
+  grid-template-columns: minmax(0, 1fr) 112px 63px;
   text-align: right;
 }
 .nv-stage-head {
@@ -550,6 +574,10 @@
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
+.nv-stage .nv-metric-unit {
+  font-size: 9px;
+  margin-left: 3px;
+}
 .nv-stage-rate {
   font-size: 10px;
   color: #9dc1b1;
@@ -581,12 +609,6 @@
   letter-spacing: -0.04em;
   margin: 9px 0 15px !important;
   line-height: 1.4 !important;
-}
-.nv-detail-number small {
-  font-size: 10px;
-  letter-spacing: 0;
-  margin-left: 8px;
-  color: #a1c3c6;
 }
 .nv-condition {
   border-top: 1px solid #3b5c63;
