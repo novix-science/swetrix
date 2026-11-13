@@ -151,6 +151,33 @@ test("native panels preserve unknown metrics, zero values, pending cohorts and a
   assert.ok(!html.includes(labels.back));
 });
 
+test('overall retention has a direct anchor and preserves accepted-task cohort metrics', () => {
+  const report = fixture();
+  report.retention.points = [7, 14].map(day => ({
+    day,
+    exact: { value: .25, numerator: 1, denominator: 4, availability: 'available', maturity: 'mature' },
+    cumulative: { value: .5, numerator: 2, denominator: 4, availability: 'available', maturity: 'mature' },
+    pendingUsers: 2,
+    unknownFirstUsers: 1,
+  }));
+  const html = renderToStaticMarkup(React.createElement(ProductSections, { report, labels, language: 'en' }));
+  assert.match(html, /id="novix-product-retention"/);
+  assert.match(html, /Overall first-use retention/);
+  assert.match(html, /first backend-accepted task across all features/);
+  assert.match(html, /D7\/D14/);
+  assert.match(html, /D1–DN/);
+  assert.match(html, /D7<\/td>/);
+  assert.match(html, /D14<\/td>/);
+  assert.match(html, /25% \(1\/4\)/);
+  assert.match(html, /50% \(2\/4\)/);
+});
+
+test('feature-filtered retention keeps its feature scope visible', () => {
+  const html = renderToStaticMarkup(React.createElement(ProductSections, { report: fixture(), labels, language: 'en', overallRetention: false }));
+  assert.ok(html.includes(labels.retention));
+  assert.ok(!html.includes('Overall first-use retention'));
+});
+
 test("accepted cohort status and terminal events remain separate, and attribution is escaped", () => {
   const html = renderToStaticMarkup(
     React.createElement(ProductSections, { report: fixture(), labels, language: "en" }),

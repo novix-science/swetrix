@@ -35,14 +35,13 @@ const server = await createServer({
         import { ReportError } from '~/pages/Project/tabs/Business/report';
         import { businessFunnelQuery } from '~/utils/novixFunnels';
         export async function renderCase(data, state = {}, search = '?novixFunnel=deep_survey', cachedSearch = search) {
-          const client = new QueryClient();
+          const client = new QueryClient({ defaultOptions: { queries: { retryOnMount: false } } });
           const params = new URLSearchParams(cachedSearch);
           const query = businessFunnelQuery({ searchParams: params, feature: params.get('novixFunnel') || 'deep_survey', period: '7d', timeBucket: 'day', timezone: 'UTC' }).toString();
           const key = ['v2', 'project12345', 'funnel', 'novix-flow-v1', query];
-          if (data) {
-            client.setQueryData(key, data);
-            client.getQueryCache().find({ queryKey: key }).setState({ ...state, ...(state.error ? { error: new ReportError(503, 'request_failed') } : {}) });
-          }
+          const cached = client.getQueryCache().build(client, { queryKey: key });
+          if (data) client.setQueryData(key, data);
+          cached.setState({ ...state, ...(state.error ? { error: new ReportError(503, 'request_failed') } : {}) });
           const i18n = createInstance();
           await i18n.init({ lng: 'en', resources: { en: { common: {} } } });
           const html = renderToStaticMarkup(React.createElement(I18nextProvider, { i18n },
@@ -70,16 +69,33 @@ const fixture = () => {
   return report
 }
 
-test('loading and background refresh show loading without cached funnel metrics', async () => {
-  for (const [data, state] of [[undefined, {}], [fixture(), { fetchStatus: 'fetching' }]]) {
-    const html = await renderCase(data, state)
-    assert.match(html, /Loading…/)
-    assert.doesNotMatch(html, /987[,.]?654|<details\b/)
-  }
+test('the initial report load displays a loader before any funnel metrics exist', async () => {
+  const html = await renderCase(undefined)
+  assert.match(html, /Loading…/)
+  assert.doesNotMatch(html, /987[,.]?654|<details\b/)
 })
 
-test('report errors hide old metrics and offer a retry', async () => {
+test('background refresh retains the current report and its expandable paths', async () => {
+  const html = await renderCase(fixture(), { fetchStatus: 'fetching' })
+  assert.match(html, /Updating…/)
+  assert.match(html, /987,654/)
+  assert.equal((html.match(/<details\b/g) || []).length, 6)
+  assert.match(html, /Snapshot/)
+  assert.doesNotMatch(html, /Loading…/)
+})
+
+test('a background error retains the current report and offers a retry', async () => {
   const html = await renderCase(fixture(), { status: 'error', error: true })
+  assert.match(html, /role="alert"/)
+  assert.match(html, /Refresh failed/)
+  assert.match(html, /Retry/)
+  assert.match(html, /987,654/)
+  assert.equal((html.match(/<details\b/g) || []).length, 6)
+  assert.match(html, /Snapshot/)
+})
+
+test('a failed initial load offers a retry without displaying metrics', async () => {
+  const html = await renderCase(undefined, { status: 'error', error: true })
   assert.match(html, /role="alert"/)
   assert.match(html, /Retry/)
   assert.doesNotMatch(html, /987[,.]?654|<details\b/)
@@ -91,6 +107,34 @@ test('changing compute filters cannot display metrics cached under the prior fil
   assert.match(html, /External/)
   assert.match(html, /Loading…/)
   assert.doesNotMatch(html, /<details\b/)
+})
+
+test('changing feature or dates cannot display metrics cached under the prior query', async () => {
+  for (const search of [
+    '?novixFunnel=idea_spark',
+    '?novixFunnel=deep_survey&from=2026-11-01&to=2026-11-03',
+  ]) {
+    const html = await renderCase(fixture(), {}, search, '?novixFunnel=deep_survey')
+    assert.match(html, /Loading…/)
+    assert.doesNotMatch(html, /987[,.]?654|<details\b/)
+  }
+})
+
+test('the overall retention entry keeps the date and visible funnel filters across features', async () => {
+  const html = await renderCase(undefined, {}, '?tab=funnels&novixFunnel=deep_survey&period=custom&from=2026-11-01&to=2026-11-03&novix_computeType=gpu&novix_internalTraffic=external&novix_feature=idea_spark&novix_mode=deep&novix_version=v2&novix_source=old')
+  const href = html.match(/<a[^>]*href="([^"]*#novix-product-retention)"/)?.[1]
+  assert.ok(href, 'overall retention links to its business panel')
+  const target = new URL(href.replaceAll('&amp;', '&'), 'https://analytics.example/project/project12345')
+  assert.equal(target.searchParams.get('tab'), 'novixBusiness')
+  assert.equal(target.searchParams.get('novix_feature'), 'all')
+  assert.equal(target.searchParams.get('period'), 'custom')
+  assert.equal(target.searchParams.get('from'), '2026-11-01')
+  assert.equal(target.searchParams.get('to'), '2026-11-03')
+  assert.equal(target.searchParams.get('novix_computeType'), 'gpu')
+  assert.equal(target.searchParams.get('novix_internalTraffic'), 'external')
+  for (const key of ['novix_mode', 'novix_version', 'novix_source', 'novixFunnel']) assert.equal(target.searchParams.has(key), false)
+  assert.match(html, /Overall first-use retention/)
+  assert.match(html, /Compute and account filters apply/)
 })
 
 test('a successful current report exposes six paths and a snapshot', async () => {

@@ -53,8 +53,8 @@ test('step coverage keeps unknown counts and rates distinct from collected zero 
   assert.match(html, /<td[^>]*>0<\/td>/)
   assert.match(html, /<td[^>]*>0%<\/td>/)
   assert.match(html, /<td[^>]*>Unknown<\/td>/)
-  assert.ok(html.includes(labels.metric_unavailable))
-  assert.ok(html.includes(labels.pending))
+  assert.ok(html.includes('Stage records insufficient'))
+  assert.ok(html.includes('Observation window open'))
   assert.ok(html.includes('deep_checklist_ready'))
   assert.ok(html.includes(labels.flowExcluded))
 })
@@ -63,8 +63,8 @@ test('pending funnels label positive ratios as observed conversions and explain 
   const item = path()
   item.steps[item.steps.length - 1] = { id: 'result', count: 1, fromPrevious: .2, fromFirst: .05, availability: 'available' }
   for (const [language, fromFirst, fromPrevious, growth, unknown] of [
-    ['en', 'Observed conversion from entry', 'Observed conversion from previous', 'may increase within the observation window', 'Pending stages with no observations remain unknown'],
-    ['zh', '已观察转化（入口）', '已观察转化（相邻阶段）', '观察窗口内仍可增长', '尚无观测的待观察阶段显示未知'],
+    ['en', 'Observed conversion from entry', 'Observed conversion from previous', 'Recorded conversions appear immediately', 'The 7-day window starts at each path entry'],
+    ['zh', '已观察转化（入口）', '已观察转化（相邻阶段）', '已发生的转化即时显示', '从每条路径的入口开始观察 7 天'],
   ]) {
     const labels = await labelsFor(language)
     const html = render([item], labels, language)
@@ -74,7 +74,7 @@ test('pending funnels label positive ratios as observed conversions and explain 
     assert.ok(html.includes(unknown), unknown)
     assert.match(html, /25%/)
     assert.match(html, /5%/)
-    assert.ok(html.includes(labels.pending))
+    assert.ok(html.includes(labels.flowPending))
     assert.match(html, new RegExp(`<td[^>]*>${labels.unknown}</td>`))
   }
 })
@@ -88,7 +88,7 @@ test('Not Now displays the proposal skip path and Chinese collection labels', as
     { id: 'skipped', count: null, fromPrevious: null, fromFirst: null, availability: 'unavailable' },
   ]
   const html = render([item], labels, 'zh')
-  for (const text of ['跳过提案卡片', '查看提案卡片', '点击 Not Now', '跳过成功', '提案数', '缺少采集的事件', '未知']) assert.ok(html.includes(text), text)
+  for (const text of ['跳过提案卡片', '查看提案卡片', '点击 Not Now', '跳过成功', '提案数', '缺少的阶段事件', '阶段记录不足', '观察期未结束', '未知']) assert.ok(html.includes(text), text)
   assert.doesNotMatch(html, /再次批准|尚未开放|flowStep_|flowUnit_/)
 })
 

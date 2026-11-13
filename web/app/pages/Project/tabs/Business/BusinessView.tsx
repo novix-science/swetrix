@@ -313,6 +313,7 @@ export default function BusinessView({ projectId }: { projectId: string }) {
           report={product.data}
           labels={labels}
           language={language}
+          overallRetention={filters.feature === 'all'}
         />
       ) : null}
       <div className='mt-6'>

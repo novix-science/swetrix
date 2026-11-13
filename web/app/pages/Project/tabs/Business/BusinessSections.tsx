@@ -70,16 +70,18 @@ function Table({
 }
 
 function Panel({
+  id,
   title,
   description,
   children,
 }: {
+  id?: string
   title: string
   description?: string
   children: React.ReactNode
 }) {
   return (
-    <section className={panel}>
+    <section id={id} className={panel}>
       <h3 className='mb-3 text-base font-semibold text-gray-900 dark:text-gray-50'>
         {title}
       </h3>
@@ -166,12 +168,20 @@ export function ProductSections({
   report,
   labels,
   language,
+  overallRetention = true,
 }: {
   report: ProductReport
   labels: Labels
   language: string
+  overallRetention?: boolean
 }) {
+  React.useEffect(() => {
+    if (window.location.hash === '#novix-product-retention') {
+      document.getElementById('novix-product-retention')?.scrollIntoView()
+    }
+  }, [])
   const l = (key: string) => labels[key] || key
+  const retentionTitle = l(overallRetention ? 'overallRetention' : 'retention')
   const n = (value?: Metric) =>
     value == null || !Number.isFinite(value)
       ? '—'
@@ -327,9 +337,17 @@ export function ProductSections({
           ])}
         />
       </Panel>
-      <Panel title={l('retention')} description={l('retentionDefinition')}>
+      <Panel
+        id='novix-product-retention'
+        title={retentionTitle}
+        description={l(
+          overallRetention
+            ? 'overallRetentionDefinition'
+            : 'retentionDefinition',
+        )}
+      >
         <Table
-          title={l('retention')}
+          title={retentionTitle}
           columns={[
             'day',
             'exactRetention',

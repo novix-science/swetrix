@@ -70,10 +70,14 @@ export default function BusinessFlowFunnels({
                   colour={
                     path.availability === 'available' ? 'green' : 'yellow'
                   }
-                  label={l(`metric_${path.availability}`)}
+                  label={
+                    path.availability === 'unavailable'
+                      ? l('flowStageRecordsInsufficient')
+                      : l(`metric_${path.availability}`)
+                  }
                 />
                 {path.pending ? (
-                  <Badge colour='slate' label={l('pending')} />
+                  <Badge colour='slate' label={l('flowPending')} />
                 ) : null}
               </div>
               <CaretDownIcon
@@ -161,7 +165,9 @@ export default function BusinessFlowFunnels({
                             {rate(known ? step.fromFirst : null)}
                           </td>
                           <td className='px-3 py-3 whitespace-nowrap'>
-                            {l(`metric_${step.availability}`)}
+                            {step.availability === 'unavailable'
+                              ? l('flowStageRecordsInsufficient')
+                              : l(`metric_${step.availability}`)}
                           </td>
                         </tr>
                       )

@@ -13,6 +13,7 @@ import { useViewProjectContext } from '../../View/ViewProject'
 import Button from '~/ui/Button'
 import Loader from '~/ui/Loader'
 import Select from '~/ui/Select'
+import { NOVIX_BUSINESS_TAB } from '~/utils/novixAnalytics'
 import {
   BUSINESS_FUNNEL_PERIODS,
   NOVIX_FUNNEL_PRESETS,
@@ -40,6 +41,17 @@ export default function BusinessFunnelPresets({
   const { period, timeBucket, timezone } = useViewProjectContext()
   const preset = getNovixFunnel(searchParams)
   const filters = readFunnelFilters(searchParams)
+  const retentionParams = new URLSearchParams(searchParams)
+  for (const key of [...retentionParams.keys()]) {
+    if (key.startsWith('novix_')) retentionParams.delete(key)
+  }
+  retentionParams.delete('novixFunnel')
+  retentionParams.delete('funnelId')
+  retentionParams.set('tab', NOVIX_BUSINESS_TAB)
+  retentionParams.set('novix_feature', 'all')
+  for (const [key, value] of Object.entries(filters)) {
+    if (value) retentionParams.set(`novix_${key}`, value)
+  }
   const query = preset
     ? businessFunnelQuery({
         searchParams,
@@ -73,9 +85,23 @@ export default function BusinessFunnelPresets({
 
   return (
     <section className='mb-6' aria-label={l('presetFunnels')}>
-      <h3 className='mb-2 text-base font-semibold text-gray-900 dark:text-gray-50'>
-        {l('presetFunnels')}
-      </h3>
+      <div className='mb-2 flex flex-wrap items-start justify-between gap-3'>
+        <h3 className='text-base font-semibold text-gray-900 dark:text-gray-50'>
+          {l('presetFunnels')}
+        </h3>
+        <div className='text-right'>
+          <Button
+            variant='secondary'
+            size='sm'
+            to={`?${retentionParams}#novix-product-retention`}
+          >
+            {l('overallRetention')}
+          </Button>
+          <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+            {l('retentionFiltersHint')}
+          </p>
+        </div>
+      </div>
       <p className='mb-4 text-sm leading-relaxed text-gray-500 dark:text-gray-400'>
         {l('presetFunnelsHint')}
       </p>
@@ -141,7 +167,7 @@ export default function BusinessFunnelPresets({
               )
             })}
           </div>
-          {report.isFetching ? (
+          {report.isLoading ? (
             <Loader className='py-5' label={l('loading')} showLabel />
           ) : null}
           {report.error ? (
@@ -149,13 +175,16 @@ export default function BusinessFunnelPresets({
               role='alert'
               className='mb-3 rounded-lg bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200'
             >
-              <p className='mb-2'>{error}</p>
+              <p className='mb-2'>
+                {report.data ? `${l('refreshFailed')} ` : ''}
+                {error}
+              </p>
               <Button variant='secondary' onClick={() => void report.refetch()}>
                 {l('retry')}
               </Button>
             </div>
           ) : null}
-          {report.data && !report.isFetching && !report.error ? (
+          {report.data ? (
             <>
               <p className='mb-3 text-xs text-gray-500 dark:text-gray-400'>
                 {l(report.data.environment)} · {l('snapshot')}{' '}
@@ -164,15 +193,19 @@ export default function BusinessFunnelPresets({
                   dateStyle: 'medium',
                   timeStyle: 'short',
                 }).format(new Date(report.data.snapshotAt))}
+                {report.isFetching ? (
+                  <output className='ml-2'>{l('updating')}</output>
+                ) : null}
+              </p>
+              <p className='mb-3 text-xs leading-relaxed text-gray-500 dark:text-gray-400'>
+                {l('presetCoverageHint')}
               </p>
               <BusinessFlowFunnels
+                key={query}
                 paths={readFlowFunnels(report.data, preset.id)}
                 labels={labels}
                 language={language}
               />
-              <p className='mt-2 text-xs leading-relaxed text-gray-500 dark:text-gray-400'>
-                {l('presetCoverageHint')}
-              </p>
             </>
           ) : null}
         </div>
