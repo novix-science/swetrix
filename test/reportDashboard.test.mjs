@@ -41,7 +41,7 @@ test("the rendered report shows backend counts, calculation definitions and sour
   const path = flowReport("auto_pilot").flowFunnels.paths.find((path) =>
     path.id.endsWith(".auto_task"),
   );
-  const counts = [2867, 1399, 421, 322, 322, 304, 263];
+  const counts = [1000, 500, 200, 150, 150, 100, 75];
   path.steps.forEach((step, index) => {
     step.count = counts[index];
   });
@@ -78,10 +78,10 @@ test("the rendered report shows backend counts, calculation definitions and sour
   );
   assert.match(html, /正式环境/);
   assert.match(html, /2026-10-15/);
-  assert.match(html, /86\.51%/);
+  assert.match(html, /75%/);
   assert.match(html, /有 Task 请求被受理/);
-  assert.match(html, /304/);
-  assert.match(html, /263/);
+  assert.match(html, /100/);
+  assert.match(html, /75/);
   assert.match(html, /观测身份/);
   assert.match(html, /history\/unified/);
   assert.match(html, /tab=funnels/);
