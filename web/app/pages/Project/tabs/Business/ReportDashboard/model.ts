@@ -4,37 +4,76 @@ import { historyRange, UNIFIED_PROJECT } from '../../Traffic/unifiedRange'
 import { readReport, ReportError } from '../report'
 import type { FlowFunnel, ProductReport } from '../types'
 import { NOVIX_FUNNEL_PRESETS, readFlowFunnels } from '~/utils/novixFunnels'
+import { getTimeseries } from '~/api/v2/endpoints'
+import type { TimeseriesRow, V2Envelope } from '~/api/v2/types'
 
 export const REPORT_TIMEZONE = 'Asia/Shanghai'
+export const REPORT_COLLECTION_START = '2026-11-09T10:35:12.000Z'
+export const REPORT_COLLECTION_DAY = '2026-11-09'
 const DAY = 86400000
 
-export function reportRange(now = new Date()) {
-  const end = historyRange(new URLSearchParams('period=today'), now).end
-  const start = new Date(Date.parse(end) - 29 * DAY).toISOString().slice(0, 10)
+export function reportRange(now = new Date(), params = new URLSearchParams()) {
+  const today = historyRange(new URLSearchParams('period=today'), now).end
+  const requestedPeriod = params.get('report_period') || '30d'
+  const from = params.get('report_from') || ''
+  const to = params.get('report_to') || ''
+  const validDate = (value: string) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    Number.isFinite(Date.parse(value)) &&
+    new Date(value).toISOString().slice(0, 10) === value
+  const validCustom =
+    validDate(from) &&
+    validDate(to) &&
+    from >= REPORT_COLLECTION_DAY &&
+    from <= to &&
+    to <= today &&
+    (Date.parse(to) - Date.parse(from)) / DAY < 93
+  const invalidSelection =
+    !['7d', '14d', '30d', 'custom'].includes(requestedPeriod) ||
+    (requestedPeriod === 'custom' && !validCustom)
+  const period = invalidSelection ? '30d' : requestedPeriod
+  const end = period === 'custom' ? to : today
+  const windowStart =
+    period === 'custom'
+      ? from
+      : new Date(Date.parse(end) - (Number.parseInt(period) - 1) * DAY)
+          .toISOString()
+          .slice(0, 10)
+  const startInclusive = new Date(
+    Math.max(
+      Date.parse(`${windowStart}T00:00:00+08:00`),
+      Date.parse(REPORT_COLLECTION_START),
+    ),
+  ).toISOString()
+  const start = new Date(Date.parse(startInclusive) + 8 * 3600000)
+    .toISOString()
+    .slice(0, 10)
   return {
+    period,
+    requestedStart: windowStart,
+    invalidSelection,
     start,
     end,
-    startInclusive: new Date(`${start}T00:00:00+08:00`).toISOString(),
+    startInclusive,
     endExclusive: new Date(
       Date.parse(`${end}T00:00:00+08:00`) + DAY,
     ).toISOString(),
   }
 }
 export type ReportRange = ReturnType<typeof reportRange>
-export type HistoryRow = {
+export type TrafficRow = {
   date: string
-  source: 'ga4' | 'cloudflare' | 'swetrix'
   pageviews: number
 }
-export interface ReportHistory {
-  schemaVersion: 1
+export interface ReportTraffic {
+  source: 'swetrix'
   projectId: string
-  environment: string
-  resolvedRange: { start: string; end: string; timezone: string }
-  rows: HistoryRow[]
+  resolvedRange: ReportRange
+  rows: TrafficRow[]
+  meta: V2Envelope<TimeseriesRow[]>['meta']
 }
 export interface DashboardData {
-  history: ReportHistory
+  traffic: ReportTraffic
   journeys: JourneyPaths
   product: ProductReport
   fetchedAt: string
@@ -43,29 +82,70 @@ const invalid = () => new ReportError(502, 'invalid_report')
 const count = (value: unknown) =>
   Number.isSafeInteger(value) && Number(value) >= 0
 
-export function validateHistory(
-  value: ReportHistory,
+export function nativeBounds(range: ReportRange) {
+  const local = (value: number) =>
+    new Date(value + 8 * 3600000).toISOString().slice(0, 19) + '+08:00'
+  return {
+    from: local(Date.parse(range.startInclusive)),
+    to: local(Date.parse(range.endExclusive) - 1000),
+  }
+}
+
+export function validateTraffic(
+  value: V2Envelope<TimeseriesRow[]>,
   range: ReportRange,
-): ReportHistory {
+): ReportTraffic {
+  const bounds = nativeBounds(range)
+  const expectedDays =
+    (Date.parse(range.end) - Date.parse(range.start)) / DAY + 1
+  // Older native responses attach +08:00 to UTC clock values in meta.
+  // The query itself uses the requested UTC instants.
+  const matchesBound = (actual: string | undefined, expected: string) =>
+    Date.parse(actual || '') === Date.parse(expected) ||
+    Date.parse((actual || '').replace(/\+08:00$/, 'Z')) === Date.parse(expected)
   if (
-    value?.schemaVersion !== 1 ||
-    value.projectId !== UNIFIED_PROJECT ||
-    value.environment !== 'production' ||
-    value.resolvedRange?.start !== range.start ||
-    value.resolvedRange?.end !== range.end ||
-    value.resolvedRange?.timezone !== REPORT_TIMEZONE ||
-    !Array.isArray(value.rows) ||
-    value.rows.length !== 30
+    value?.meta?.pid !== UNIFIED_PROJECT ||
+    !matchesBound(value.meta.from, bounds.from) ||
+    !matchesBound(value.meta.to, bounds.to) ||
+    value.meta.timezone !== REPORT_TIMEZONE ||
+    value.meta.timeBucket !== 'day' ||
+    value.meta.mode !== 'periodical' ||
+    value.meta.metrics?.length !== 1 ||
+    value.meta.metrics[0] !== 'pageviews' ||
+    !Array.isArray(value.meta.appliedFilters) ||
+    value.meta.appliedFilters.length !== 0 ||
+    !Array.isArray(value.data) ||
+    value.data.length < expectedDays ||
+    value.data.length > expectedDays + 1
   )
     throw invalid()
-  const rows = [...value.rows].sort((a, b) => a.date.localeCompare(b.date))
+  const rows = value.data
+    .map((row) => ({
+      date: Number.isFinite(Date.parse(row.timestamp))
+        ? new Date(Date.parse(row.timestamp) + 8 * 3600000)
+            .toISOString()
+            .slice(0, 10)
+        : '',
+      pageviews: row.pageviews,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+  // The same legacy formatting can add an empty preceding-day chart bucket.
+  const precedingDay = new Date(Date.parse(range.start) - DAY)
+    .toISOString()
+    .slice(0, 10)
+  if (
+    rows.length === expectedDays + 1 &&
+    rows[0].date === precedingDay &&
+    (rows[0].pageviews === 0 || rows[0].pageviews === '0')
+  )
+    rows.shift()
+  if (rows.length !== expectedDays) throw invalid()
   for (const [index, row] of rows.entries()) {
     const date = new Date(Date.parse(range.start) + index * DAY)
       .toISOString()
       .slice(0, 10)
     if (
       row.date !== date ||
-      !['ga4', 'cloudflare', 'swetrix'].includes(row.source) ||
       row.pageviews == null ||
       String(row.pageviews).trim() === '' ||
       !count(Number(row.pageviews))
@@ -73,7 +153,10 @@ export function validateHistory(
       throw invalid()
   }
   return {
-    ...value,
+    source: 'swetrix',
+    projectId: UNIFIED_PROJECT,
+    resolvedRange: range,
+    meta: value.meta,
     rows: rows.map((row) => ({ ...row, pageviews: Number(row.pageviews) })),
   }
 }
@@ -96,11 +179,11 @@ export function reportSourceLink(
   const query = new URLSearchParams({
     tab,
     period: 'custom',
-    from: `${range.start}T00:00:00+08:00`,
-    to: `${range.end}T23:59:59+08:00`,
+    ...nativeBounds(range),
     timezone: REPORT_TIMEZONE,
     timeBucket: 'day',
   })
+  if (tab === 'traffic') query.set('novix_live', '1')
   if (feature) {
     query.set('novixFunnel', feature)
     query.set('novix_internalTraffic', 'external')
@@ -122,22 +205,23 @@ export async function readDashboard(
   const journeyQuery = new URLSearchParams(dates)
   journeyQuery.set('depth', '5')
   journeyQuery.set('take', '10')
-  const historyQuery = new URLSearchParams({
-    start: range.start,
-    end: range.end,
-  })
-  const [rawHistory, journeys, product] = await Promise.all([
-    fetch(`${root}/history/unified?${historyQuery}`, {
-      credentials: 'same-origin',
+  const [rawTraffic, journeys, product] = await Promise.all([
+    getTimeseries(
+      UNIFIED_PROJECT,
+      'traffic',
+      {
+        ...nativeBounds(range),
+        timezone: REPORT_TIMEZONE,
+        timeBucket: 'day',
+        mode: 'periodical',
+        metrics: ['pageviews'],
+      },
       signal,
-    }).then(async (response) => {
-      if (!response.ok) throw new ReportError(response.status, 'request_failed')
-      return response.json()
-    }),
+    ),
     readJourney<JourneyPaths>(`${root}/journeys/paths?${journeyQuery}`, signal),
     readReport<ProductReport>(`${root}/product/report?${productQuery}`, signal),
   ])
-  const history = validateHistory(rawHistory, range)
+  const traffic = validateTraffic(rawTraffic, range)
   for (const source of [journeys, product]) {
     if (
       Date.parse(source.resolvedRange.startInclusive) !==
@@ -182,7 +266,7 @@ export async function readDashboard(
       preset.id,
     )
   }
-  return { history, journeys, product, fetchedAt: new Date().toISOString() }
+  return { traffic, journeys, product, fetchedAt: new Date().toISOString() }
 }
 
 type StageValue = Pick<FlowFunnel['steps'][number], 'count' | 'availability'>

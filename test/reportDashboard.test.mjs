@@ -24,13 +24,54 @@ try {
   await server.close();
 }
 
-test("the report uses exactly 30 Shanghai calendar days including today", () => {
+function nativeTraffic(range) {
+  const days = (Date.parse(range.end) - Date.parse(range.start)) / 86400000 + 1;
+  return {
+    meta: {
+      pid: "JFfioEKRd0Sy", ...model.nativeBounds(range), timezone: "Asia/Shanghai",
+      timeBucket: "day", mode: "periodical", metrics: ["pageviews"], appliedFilters: [],
+    },
+    data: Array.from({length: days}, (_, i) => ({
+      timestamp: new Date(Date.parse(range.start) + i * 86400000).toISOString().slice(0, 10) + "T00:00:00+08:00",
+      pageviews: String(i + 1),
+    })),
+  };
+}
+
+test("report presets and custom dates use Shanghai days and the actual collection start", () => {
   const range = model.reportRange(new Date("2026-11-13T15:59:59Z"));
-  assert.equal(range.start, "2026-10-15");
+  assert.equal(range.start, "2026-11-09");
   assert.equal(range.end, "2026-11-13");
-  assert.equal(range.startInclusive, "2026-10-14T16:00:00.000Z");
+  assert.equal(range.startInclusive, "2026-11-09T10:35:12.000Z");
   assert.equal(range.endExclusive, "2026-11-13T16:00:00.000Z");
   assert.equal(model.reportRange(new Date("2026-11-13T16:00:00Z")).end, "2026-11-14");
+  const now = new Date("2026-12-15T08:00:00Z");
+  for (const [period, start] of [["7d", "2026-12-09"], ["14d", "2026-12-02"], ["30d", "2026-11-16"]]) {
+    const result = model.reportRange(now, new URLSearchParams({report_period: period}));
+    assert.equal(result.start, start);
+    assert.equal(result.end, "2026-12-15");
+    assert.equal(result.startInclusive, new Date(`${start}T00:00:00+08:00`).toISOString());
+  }
+  const custom = model.reportRange(now, new URLSearchParams("report_period=custom&report_from=2026-11-10&report_to=2026-11-11"));
+  assert.equal(custom.startInclusive, "2026-11-09T16:00:00.000Z");
+  assert.equal(custom.endExclusive, "2026-11-11T16:00:00.000Z");
+  const link = new URL(model.reportSourceLink(range, "traffic"), "https://analytics.novix.science");
+  assert.equal(link.searchParams.get("novix_live"), "1");
+  assert.equal(link.searchParams.get("from"), "2026-11-09T18:35:12+08:00");
+  assert.equal(link.searchParams.get("to"), "2026-11-13T23:59:59+08:00");
+  for (const dates of [
+    "report_from=2026-11-11&report_to=2026-11-10",
+    "report_from=2026-11-08&report_to=2026-11-11",
+    "report_from=2026-11-10&report_to=2027-01-01",
+    "report_from=2026-11-31&report_to=2026-12-02",
+  ]) {
+    const invalid = model.reportRange(now, new URLSearchParams("report_period=custom&" + dates));
+    assert.equal(invalid.invalidSelection, true);
+    assert.equal(invalid.period, "30d");
+  }
+  const future = new Date("2027-03-01T08:00:00Z");
+  assert.equal(model.reportRange(future, new URLSearchParams("report_period=custom&report_from=2026-11-09&report_to=2027-02-09")).invalidSelection, false);
+  assert.equal(model.reportRange(future, new URLSearchParams("report_period=custom&report_from=2026-11-09&report_to=2027-02-10")).invalidSelection, true);
 });
 
 test("the rendered report shows backend counts, calculation definitions and source links", () => {
@@ -47,13 +88,7 @@ test("the rendered report shows backend counts, calculation definitions and sour
   });
   const data = {
     fetchedAt: "2026-11-13T08:05:17Z",
-    history: {
-      rows: Array.from({ length: 30 }, (_, i) => ({
-        date: new Date(Date.parse(range.start) + i * 86400000).toISOString().slice(0, 10),
-        source: "cloudflare",
-        pageviews: 1,
-      })),
-    },
+    traffic: model.validateTraffic(nativeTraffic(range), range),
     journeys: {
       snapshotAt: "2026-11-13T08:05:07Z",
       totalSessions: 100,
@@ -77,22 +112,23 @@ test("the rendered report shows backend counts, calculation definitions and sour
     ),
   );
   assert.match(html, /正式环境/);
-  assert.match(html, /2026-10-15/);
+  assert.match(html, /2026-11-09/);
   assert.match(html, /75%/);
   assert.match(html, /有 Task 请求被受理/);
   assert.match(html, /100/);
   assert.match(html, /75/);
   assert.match(html, /观测身份/);
-  assert.match(html, /30<small class="nv-metric-unit">\(PV\)<\/small>/);
+  assert.match(html, /15<small class="nv-metric-unit">\(PV\)<\/small>/);
   assert.match(html, /100<small class="nv-metric-unit">\(会话数\)<\/small>/);
   assert.match(html, /70<small class="nv-metric-unit">\(UV\)<\/small>/);
   assert.match(html, /20<small class="nv-metric-unit">\(路径数\)<\/small>/);
   assert.match(html, /75<small class="nv-metric-unit">\(会话数\)<\/small>/);
-  assert.match(html, /2026-10-15 — 2026-11-13/);
-  assert.match(html, /Cloudflare 的历史导入保留流量汇总/);
-  assert.match(html, /后端已有的历史使用记录另行计入功能使用/);
+  assert.match(html, /2026-11-09 — 2026-11-13/);
+  assert.match(html, /Swetrix 原生页面浏览次数/);
+  assert.doesNotMatch(html, /Cloudflare|GA4|历史与新增流量合并/);
   assert.match(html, /UV 按登录或匿名浏览器观测身份去重/);
-  assert.match(html, /history\/unified/);
+  assert.match(html, /traffic\/timeseries/);
+  assert.match(html, /novix_live=1/);
   assert.match(html, /tab=funnels/);
   assert.doesNotMatch(html, /100%等待|85%.*会等待/);
   data.product.flowFunnels.paths.push(...flowReport("auto_discovery").flowFunnels.paths);
@@ -106,46 +142,45 @@ test("the rendered report shows backend counts, calculation definitions and sour
   assert.match(proposalHtml, /0<small class="nv-metric-unit">\(提案数\)<\/small>/);
 });
 
-test("each historical day is counted once and invalid coverage fails visibly", () => {
+test("native traffic rejects incomplete dates, incompatible scope and timezone shifts", () => {
   const range = model.reportRange(new Date("2026-11-13T08:00:00Z"));
-  const history = {
-    schemaVersion: 1,
-    projectId: "JFfioEKRd0Sy",
-    environment: "production",
-    resolvedRange: { start: range.start, end: range.end, timezone: "Asia/Shanghai" },
-    rows: Array.from({ length: 30 }, (_, i) => ({
-      date: new Date(Date.parse(range.start) + i * 86400000).toISOString().slice(0, 10),
-      source: i < 26 ? "cloudflare" : "swetrix",
-      pageviews: String(i + 1),
-    })),
-  };
+  const traffic = nativeTraffic(range);
   assert.equal(
-    model.validateHistory(history, range).rows.reduce((n, row) => n + row.pageviews, 0),
-    465,
+    model.validateTraffic(traffic, range).rows.reduce((n, row) => n + row.pageviews, 0),
+    15,
   );
   for (const mutate of [
-    (value) => value.rows.push(value.rows[0]),
-    (value) => value.rows.pop(),
+    (value) => value.data.push(value.data[0]),
+    (value) => value.data.pop(),
     (value) => {
-      value.environment = "staging";
+      value.meta.from = "2026-11-09T11:35:12+08:00";
     },
     (value) => {
-      value.projectId = "3YB7MtPN7WXv";
+      value.meta.pid = "3YB7MtPN7WXv";
     },
     (value) => {
-      value.rows[0].pageviews = -1;
+      value.data[0].pageviews = -1;
     },
     (value) => {
-      value.rows[0].pageviews = null;
+      value.data[0].pageviews = null;
     },
     (value) => {
-      value.rows[0].date = "2026-10-14";
+      value.data[0].timestamp = "2026-11-08T00:00:00+08:00";
     },
+    (value) => { value.meta.appliedFilters = [{dimension: "host", operator: "is", value: "example.com"}]; },
+    (value) => { value.data[1].timestamp = value.data[0].timestamp; },
   ]) {
-    const invalid = structuredClone(history);
+    const invalid = structuredClone(traffic);
     mutate(invalid);
-    assert.throws(() => model.validateHistory(invalid, range));
+    assert.throws(() => model.validateTraffic(invalid, range));
   }
+  const legacy = structuredClone(traffic);
+  legacy.meta.from = "2026-11-09T10:35:12+08:00";
+  legacy.meta.to = "2026-11-13T15:59:59+08:00";
+  legacy.data.unshift({timestamp:"2026-11-08T00:00:00+08:00",pageviews:0});
+  assert.equal(model.validateTraffic(legacy, range).rows.length, 5);
+  legacy.data[0].pageviews = 1;
+  assert.throws(() => model.validateTraffic(legacy, range));
 });
 
 test("rates preserve unknown, partial and zero-denominator meanings", () => {
@@ -193,17 +228,7 @@ test("the dashboard reads the production APIs with identical date ranges and val
     endExclusive: range.endExclusive,
     timezone: "Asia/Shanghai",
   };
-  const history = {
-    schemaVersion: 1,
-    projectId: "JFfioEKRd0Sy",
-    environment: "production",
-    resolvedRange: { start: range.start, end: range.end, timezone: "Asia/Shanghai" },
-    rows: Array.from({ length: 30 }, (_, i) => ({
-      date: new Date(Date.parse(range.start) + i * 86400000).toISOString().slice(0, 10),
-      source: "cloudflare",
-      pageviews: 1,
-    })),
-  };
+  const traffic = nativeTraffic(range);
   const features = [
     "auto_discovery",
     "auto_pilot",
@@ -241,18 +266,22 @@ test("the dashboard reads the production APIs with identical date ranges and val
   t.mock.method(globalThis, "fetch", async (url) => {
     calls.push(new URL(url, "https://analytics.novix.science"));
     return Response.json(
-      url.includes("/history/") ? history : url.includes("/journeys/") ? journeys : product,
+      url.includes("/traffic/") ? traffic : url.includes("/journeys/") ? journeys : product,
     );
   });
   const result = await model.readDashboard(range, new AbortController().signal);
   assert.equal(result.product.flowFunnels.paths.length, 48);
   assert.equal(
-    result.history.rows.reduce((n, row) => n + row.pageviews, 0),
-    30,
+    result.traffic.rows.reduce((n, row) => n + row.pageviews, 0),
+    15,
   );
   for (const url of calls) {
     assert.match(url.pathname, /\/projects\/JFfioEKRd0Sy\//);
-    if (!url.pathname.includes("/history/")) {
+    assert.doesNotMatch(url.pathname, /history/);
+    if (url.pathname.includes("/traffic/")) {
+      assert.equal(url.searchParams.get("from"), model.nativeBounds(range).from);
+      assert.equal(url.searchParams.get("to"), model.nativeBounds(range).to);
+    } else {
       assert.equal(url.searchParams.get("startInclusive"), range.startInclusive);
       assert.equal(url.searchParams.get("endExclusive"), range.endExclusive);
       assert.equal(url.searchParams.get("timezone"), "Asia/Shanghai");

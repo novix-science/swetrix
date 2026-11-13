@@ -1,15 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 
 import Button from '~/ui/Button'
 import Loader from '~/ui/Loader'
+import DatePicker from '~/ui/Datepicker'
+import { calendarDate, calendarDay } from '../../Traffic/unifiedRange'
 import { NOVIX_FUNNEL_PRESETS } from '~/utils/novixFunnels'
 import { ReportError } from '../report'
 import type { FlowFunnel } from '../types'
 import {
   PATH_NAMES,
   REPORT_TIMEZONE,
+  REPORT_COLLECTION_DAY,
   ROUTE_NAMES,
   readDashboard,
   reportRange,
@@ -41,7 +44,6 @@ const dateTime = (value: string) =>
     second: '2-digit',
     hour12: false,
   }).format(new Date(value))
-const sourceName = { ga4: 'GA4', cloudflare: 'Cloudflare', swetrix: 'Swetrix' }
 const dataState = {
   available: '可统计',
   partial: '部分记录',
@@ -298,28 +300,16 @@ export function ReportContent({
 }) {
   const [presentation, setPresentation] = useState(false)
   const [selectedDay, setSelectedDay] = useState(range.end)
-  const { history, journeys, product } = data
-  const rows = history.rows
+  const { traffic, journeys, product } = data
+  const rows = traffic.rows
   const pv = rows.reduce((total, row) => total + row.pageviews, 0)
-  const sourceTotals = rows.reduce<
-    Partial<
-      Record<
-        (typeof rows)[number]['source'],
-        { total: number; start: string; end: string }
-      >
-    >
-  >((totals, row) => {
-    const previous = totals[row.source]
-    totals[row.source] = {
-      total: (previous?.total || 0) + row.pageviews,
-      start: previous?.start || row.date,
-      end: row.date,
-    }
-    return totals
-  }, {})
-  const importedSources = Object.keys(sourceTotals)
-    .filter((source) => source !== 'swetrix')
-    .map((source) => sourceName[source as keyof typeof sourceName])
+  const axisIndices = [
+    ...new Set(
+      Array.from({ length: 5 }, (_, index) =>
+        Math.round((index * (rows.length - 1)) / 4),
+      ),
+    ),
+  ]
   const maxPV = Math.max(1, ...rows.map((row) => row.pageviews))
   const day =
     rows.find((row) => row.date === selectedDay) || rows[rows.length - 1]
@@ -336,12 +326,7 @@ export function ReportContent({
     product.usage.operations - product.coverage.unknownFeatureUses
   const ratio = (value: number, total: number) =>
     total > 0 ? p(value / total) : '—'
-  const observedStart = new Date(
-    Math.max(
-      Date.parse(range.startInclusive),
-      Date.parse('2026-11-09T10:35:12Z'),
-    ),
-  ).toISOString()
+  const observedStart = range.startInclusive
   const download = () => {
     const blob = new Blob([JSON.stringify({ range, ...data }, null, 2)], {
       type: 'application/json',
@@ -385,11 +370,13 @@ export function ReportContent({
         <div className='nv-hero-grid'>
           <div>
             <h1>
-              最近 30 天<br />
+              Swetrix 采集期
+              <br />
               产品使用汇报<span>.</span>
             </h1>
             <p className='nv-date'>
-              {range.start} — {range.end}
+              {range.start} — {range.end} · 起点{' '}
+              {dateTime(range.startInclusive)}
             </p>
             <p className='nv-intro'>
               从页面访问到研究结果查看，
@@ -398,72 +385,70 @@ export function ReportContent({
             </p>
           </div>
           <div className='nv-primary-metric'>
-            <p>近 30 天页面浏览量</p>
+            <p>所选采集期页面浏览量</p>
             <strong>
               <MetricValue value={pv} unit='PV' />
             </strong>
-            <p>页面浏览次数 · 历史与新增流量合并</p>
-            <div className='nv-source-totals'>
-              {Object.entries(sourceTotals).map(([source, coverage]) => (
-                <span key={source} className='nv-source-total'>
-                  <span>
-                    <i className={`nv-source-dot nv-${source}`} />
-                    {sourceName[source as keyof typeof sourceName]}{' '}
-                    <b>
-                      <MetricValue value={coverage!.total} unit='PV' />
-                    </b>
-                  </span>
-                  <small>
-                    {coverage!.start} — {coverage!.end}
-                  </small>
-                </span>
-              ))}
-            </div>
-            <p className='nv-small'>每天使用一个来源 · 11.10 起采用 Swetrix</p>
+            <p>Swetrix 原生页面浏览次数 · 正式项目</p>
+            <p className='nv-small'>
+              实际范围 {dateTime(range.startInclusive)} —{' '}
+              {dateTime(
+                data.fetchedAt < range.endExclusive
+                  ? data.fetchedAt
+                  : range.endExclusive,
+              )}
+            </p>
           </div>
         </div>
         <div className='nv-trend-title'>
           <h2>每日页面浏览量</h2>
           <span>选择日期查看数值</span>
         </div>
-        <div className='nv-chart' aria-label='近 30 天每日页面浏览量'>
+        <div
+          className='nv-chart'
+          aria-label='所选采集期每日页面浏览量'
+          style={{
+            gridTemplateColumns: `repeat(${rows.length}, minmax(0, 1fr))`,
+          }}
+        >
           {rows.map((row) => (
             <button
               type='button'
               key={row.date}
-              aria-label={`${row.date}，${sourceName[row.source]}，${n(row.pageviews)} PV`}
+              aria-label={`${row.date}，Swetrix，${n(row.pageviews)} PV`}
               aria-pressed={row.date === day.date}
               onClick={() => setSelectedDay(row.date)}
               title={`${row.date} · ${n(row.pageviews)} PV`}
             >
               <span
-                className={`nv-${row.source}`}
+                className='nv-swetrix'
                 style={{ height: `${(row.pageviews / maxPV) * 100}%` }}
               />
             </button>
           ))}
         </div>
         <div className='nv-chart-axis'>
-          {[0, 7, 14, 21, 29].map((index) => (
+          {axisIndices.map((index) => (
             <span key={index}>
               {rows[index].date.slice(5).replace('-', '.')}
             </span>
           ))}
         </div>
         <p className='nv-chart-readout' aria-live='polite'>
-          {day.date} · {sourceName[day.source]} · {n(day.pageviews)} PV
+          {day.date} · Swetrix · <MetricValue value={day.pageviews} unit='PV' />
+          {day.date === REPORT_COLLECTION_DAY
+            ? ' · 接入当日从 18:35:12 起'
+            : ''}
           {day.date === range.end ? ' · 今日截至本次取数' : ''}
         </p>
         <div className='nv-scope-strip'>
           <span aria-hidden>i</span>
           <p>
-            <strong>流量汇总与功能行为的覆盖时间不同。</strong>{' '}
-            {importedSources.length
-              ? `${importedSources.join('、')} 的历史导入保留流量汇总，缺少将每次访问关联到后续功能使用的完整明细。`
-              : ''}
-            路径与研究流程明细从 11 月 9
-            日开始采集，后端已有的历史使用记录另行计入功能使用。
-            计算访问到使用的转化率需要相同采集期、身份与筛选范围。今日数据仍会增加。
+            <strong>本页采用 Swetrix 接入后的实际采集范围。</strong> PV
+            与访问路径来自正式项目的原生页面记录，研究流程关联同范围的前端行为与后端任务事实。
+            Loop 实际启动从 11 月 12 日、提案展示与决定从 11 月 13
+            日开始有记录。
+            业务流程排除已识别内部账号，计算比例仍需核对身份与筛选范围。今日数据仍会增加。
           </p>
           <a href={reportSourceLink(range, 'traffic')}>复查流量后台 ↗</a>
         </div>
@@ -662,12 +647,13 @@ export function ReportContent({
               <tr>
                 <th>页面浏览量 (PV)</th>
                 <td>
-                  每天选一个来源，再对 30 天求和。不同来源的采集规则存在差异。
+                  Swetrix
+                  正式项目原生页面事件按上海自然日分组，再对所选范围求和。
                 </td>
                 <td>
-                  11.09 及以前采用导入聚合值，11.10 起使用 Swetrix 中
-                  host=novix.science 的页面访问。当前来源和日期见页首，GA4
-                  只在更早的历史区间出现。 历史来源无法统一排除内部流量。
+                  最早从 11.09 18:35:12 开始。PV
+                  与访问路径均按正式项目归集，包含部分缺少 host
+                  的旧原生页面记录。
                 </td>
               </tr>
               <tr>
@@ -678,8 +664,7 @@ export function ReportContent({
                 </td>
                 <td>
                   正式项目原生明细从 11.09 18:35 起覆盖。一次访问可包含多次
-                  PV。历史 Cloudflare Visits
-                  沿用其独立定义，本页保留原生访问路径的计数方式。
+                  PV。按原生访问路径的计数方式统计。
                 </td>
               </tr>
               <tr>
@@ -715,7 +700,7 @@ export function ReportContent({
                 <th>功能使用</th>
                 <td>后端已受理的用户主动操作去重计数，单位为操作次数。</td>
                 <td>
-                  业务事实覆盖时间早于前端行为明细。历史缺少功能字段时保留“功能未归属”，无法可靠补分到具体科研功能。
+                  只计所选采集范围内被受理的操作。缺少功能字段时保留“功能未归属”，无法可靠补分到具体科研功能。
                 </td>
               </tr>
             </tbody>
@@ -726,31 +711,30 @@ export function ReportContent({
           <ul>
             <li>
               全部接口固定读取 Novix Production 项目，服务端业务响应须为
-              production。固定采用上海时区最近 30 个自然日，含今天。
+              production。日期采用上海时区，范围最早从 Swetrix 接入点开始。
             </li>
             <li>
-              流量校验 30
-              个日期连续且每天唯一，再从同一接口的逐日值求和。图表、来源拆分与总
+              流量校验所选范围内的日期连续且每天唯一，再从同一原生接口的逐日值求和。图表与总
               PV 共用这份逐日数据。
             </li>
             <li>
               路径、流程和结论直接引用后台返回的聚合计数。整份看板在全部接口成功后一起更新，接口失败时保留可识别的错误状态。
             </li>
             <li>
-              路径按正式项目归集，部分旧页面记录缺少 host。PV 的新增部分要求
-              host=novix.science，二者的域名覆盖与内部流量筛选存在差异。
+              PV
+              和路径采用正式项目全量原生页面记录。业务流程排除已识别内部账号，匿名或身份未知的内部流量仍可能保留。
             </li>
             <li>
               研究流程从 11.09 开始有前端行为记录，Loop 实际启动从 11.12
               开始有记录，Auto-Discovery 提案展示与决定从 11.13 开始有记录。选择
-              30 天只能覆盖这些实际可观测记录。
+              日期范围只覆盖各阶段实际可观测记录。
             </li>
             <li>
               每节标注独立接口快照时间，接口执行相差数秒。再次打开或刷新后台时，新增访问与延迟入库可能让今天的计数继续变化。
             </li>
           </ul>
           <p>
-            页面取数接口为 history/unified、journeys/paths 和
+            页面取数接口为原生 traffic/timeseries、journeys/paths 和
             product/report。所有请求沿用看板登录会话与私有项目权限，下载数据中保留取数范围、筛选与快照。
           </p>
         </details>
@@ -769,23 +753,106 @@ export function ReportContent({
 }
 
 export default function ReportDashboard() {
-  const [range, setRange] = useState(() => reportRange())
+  const [now, setNow] = useState(() => new Date())
+  const [params, setParams] = useSearchParams()
+  const range = useMemo(() => reportRange(now, params), [now, params])
+  const calendar = useRef<{
+    openCalendar: () => void
+    closeCalendar: () => void
+  }>(null)
+  const calendarValue = useMemo(
+    () => [calendarDate(range.start), calendarDate(range.end)],
+    [range.start, range.end],
+  )
+  const minDate = useMemo(() => calendarDate(REPORT_COLLECTION_DAY), [])
+  const maxDate = useMemo(() => calendarDate(reportRange(now).end), [now])
+  const selectRange = (period: string, start?: string, end?: string) => {
+    const next = new URLSearchParams(params)
+    next.set('report_period', period)
+    next.delete('report_from')
+    next.delete('report_to')
+    if (period === 'custom' && start && end) {
+      next.set('report_from', start)
+      next.set('report_to', end)
+    }
+    setNow(new Date())
+    setParams(next, { preventScrollReset: true })
+  }
   const query = useQuery({
-    queryKey: ['novix-report-dashboard', range.start, range.end],
+    queryKey: [
+      'novix-native-report-dashboard',
+      range.startInclusive,
+      range.endExclusive,
+    ],
     queryFn: ({ signal }) => readDashboard(range, signal),
     staleTime: 30_000,
     retry: false,
     refetchOnWindowFocus: false,
   })
   const refresh = () => {
-    const next = reportRange()
-    if (next.end === range.end) void query.refetch()
-    else setRange(next)
+    const next = new Date()
+    if (reportRange(next, params).end === range.end) void query.refetch()
+    setNow(next)
   }
   return (
     <div>
+      <div className='mb-5 rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900'>
+        <div
+          className='flex flex-wrap items-center gap-2'
+          role='group'
+          aria-label='汇报日期范围'
+        >
+          {[7, 14, 30].map((days) => (
+            <Button
+              key={days}
+              variant={range.period === `${days}d` ? 'secondary' : 'ghost'}
+              aria-pressed={range.period === `${days}d`}
+              onClick={() => selectRange(`${days}d`)}
+            >
+              最近 {days} 天
+            </Button>
+          ))}
+          <div className='relative'>
+            <Button
+              variant={range.period === 'custom' ? 'secondary' : 'ghost'}
+              aria-pressed={range.period === 'custom'}
+              aria-haspopup='dialog'
+              onClick={() => calendar.current?.openCalendar()}
+            >
+              自定义日期
+            </Button>
+            <DatePicker
+              ref={calendar}
+              align='left'
+              className='absolute top-4 left-0'
+              value={calendarValue}
+              minDate={minDate}
+              maxDate={maxDate}
+              maxRange={92}
+              onChange={([start, end]) =>
+                selectRange('custom', calendarDay(start), calendarDay(end))
+              }
+            />
+          </div>
+        </div>
+        <p className='mt-3 text-sm text-gray-600 dark:text-gray-300'>
+          实际统计范围 {dateTime(range.startInclusive)} — {range.end} ·
+          Asia/Shanghai
+          {range.requestedStart < REPORT_COLLECTION_DAY
+            ? ' · 所选范围早于接入时间，已从接入点开始统计'
+            : ''}
+        </p>
+        <p className='mt-1 text-xs text-gray-500'>
+          Swetrix 接入于 2026-11-09 18:35:12 · 自定义最多 93 个自然日
+        </p>
+        {range.invalidSelection ? (
+          <p role='alert' className='mt-2 text-sm text-amber-700'>
+            日期参数无效，已显示最近 30 天内的实际采集范围。
+          </p>
+        ) : null}
+      </div>
       {query.isPending ? (
-        <Loader label='正在读取正式环境最近 30 天数据' showLabel />
+        <Loader label='正在读取 Swetrix 正式采集数据' showLabel />
       ) : null}
       {query.error ? (
         <div

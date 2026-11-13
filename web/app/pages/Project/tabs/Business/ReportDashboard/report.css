@@ -170,51 +170,8 @@
 .nv-primary-metric > strong .nv-metric-unit {
   font-size: 16px;
 }
-.nv-source-totals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: 22px 0 10px;
-  font-size: 10px;
-}
-.nv-source-total {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.nv-source-total > span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #a6bfc7;
-}
-.nv-source-total > small {
-  color: #8eabb5;
-  font-size: 9px;
-}
-.nv-source-totals .nv-metric-unit {
-  font-size: inherit;
-  margin-left: 3px;
-}
-.nv-source-totals b {
-  color: #e3efec;
-  font-weight: 500;
-  margin-left: 4px;
-}
-.nv-source-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 1px;
-}
-.nv-cloudflare {
-  background: #527b8b;
-}
 .nv-swetrix {
   background: var(--nv-mint);
-}
-.nv-ga4 {
-  background: #9b9bd2;
 }
 .nv-small {
   font-size: 10px !important;
@@ -240,7 +197,6 @@
 .nv-chart {
   height: 140px;
   display: grid;
-  grid-template-columns: repeat(30, minmax(0, 1fr));
   gap: 6px;
   align-items: end;
   border-bottom: 1px solid #476674;
@@ -876,9 +832,6 @@
   }
   .nv-primary-metric > p {
     font-size: 11px;
-  }
-  .nv-source-totals {
-    margin-top: 15px;
   }
   .nv-chart {
     gap: 3px;

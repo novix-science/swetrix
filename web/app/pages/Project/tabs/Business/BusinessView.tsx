@@ -375,7 +375,7 @@ export default function BusinessView({ projectId }: { projectId: string }) {
             aria-pressed={report}
             onClick={() => select('report')}
           >
-            {zh ? '近 30 天汇报看板' : '30-day report (Chinese)'}
+            {zh ? '采集期汇报看板' : 'Collection-period report (Chinese)'}
           </Button>
         </div>
       ) : null}
