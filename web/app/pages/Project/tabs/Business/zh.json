@@ -222,7 +222,7 @@
   "metric_partial": "部分覆盖",
   "metric_unavailable": "未采集",
   "metric_empty": "—",
-  "pending": "待成熟",
+  "pending": "观察期未结束",
   "channels": "渠道归因",
   "dataCoverage": "数据覆盖",
   "identityCoverage": "匿名流量的内部身份可能未知。页面刷新前的匿名历史保持独立，明确身份关联后才会归并。",

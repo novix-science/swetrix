@@ -222,7 +222,7 @@
   "metric_partial": "Partial coverage",
   "metric_unavailable": "Not collected",
   "metric_empty": "—",
-  "pending": "Pending observation",
+  "pending": "Observation window open",
   "channels": "Channel attribution",
   "dataCoverage": "Data coverage",
   "identityCoverage": "Anonymous traffic may have unknown internal-account status. Anonymous history before a page reload remains separate unless an explicit identity link exists.",

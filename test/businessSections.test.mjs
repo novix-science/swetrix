@@ -140,7 +140,7 @@ test("native panels preserve unknown metrics, zero values, pending cohorts and a
   assert.equal((html.match(/<td[^>]*>Feature \d+<\/td>/g) || []).length, 13);
   for (const text of [
     "Coming soon",
-    "Pending observation",
+    "Observation window open",
     "Daily cohort",
     "Weekly cohort",
     "Missing field associations",
