@@ -205,15 +205,18 @@ test('a compute-inapplicable skip path explains its unavailable counts in both l
     coverage: { missingEvents: [], excluded: 0, limitations: ['compute_not_applicable'] },
     steps: ['proposal', 'not_now', 'skipped'].map(id => ({ id, count: null, fromPrevious: null, fromFirst: null, availability: 'unavailable' })),
   }
-  for (const [language, explanation] of [
-    ['en', 'Skipping a card uses no execution resources. CPU/GPU filters do not apply to this path.'],
-    ['zh', '跳过卡片不涉及执行资源，此路径不适用 CPU/GPU 筛选'],
+  for (const [language, explanation, state] of [
+    ['en', 'Skipping a card uses no execution resources. CPU/GPU filters do not apply to this path.', 'Compute filter not applicable'],
+    ['zh', '跳过卡片不涉及执行资源，此路径不适用 CPU/GPU 筛选', '资源筛选不适用'],
   ]) {
     const labels = await labelsFor(language)
     const html = render([item], labels, language)
     assert.ok(html.includes(explanation), explanation)
     assert.ok(html.includes(labels.unknown))
+    assert.ok(html.split('</summary>')[0].includes(state), state)
     const stepsHtml = html.slice(0, html.indexOf('</table>') + '</table>'.length)
+    assert.equal((stepsHtml.match(new RegExp(`<td[^>]*>${state}</td>`, 'g')) || []).length, 3)
+    assert.ok(!html.includes(labels.flowStageRecordsInsufficient))
     assert.doesNotMatch(stepsHtml, /<td[^>]*>0%?<\/td>/)
     assert.doesNotMatch(html, /再次批准|尚未开放/)
   }

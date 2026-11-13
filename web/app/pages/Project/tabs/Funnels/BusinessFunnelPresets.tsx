@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { FunnelIcon } from '@phosphor-icons/react'
+import dayjs, { type OpUnitType } from 'dayjs'
+import timezonePlugin from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 
@@ -26,6 +29,36 @@ import {
   updateFunnelFilter,
 } from '~/utils/novixFunnels'
 
+dayjs.extend(utc)
+dayjs.extend(timezonePlugin)
+
+function customRangeDays(
+  params: URLSearchParams,
+  timezone: string,
+  timeBucket: string,
+) {
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/
+  if (
+    dateOnly.test(params.get('from') || '') &&
+    params.get('from') === params.get('to')
+  )
+    return 1
+  const dates = ['from', 'to'].map((key) => {
+    const value = params.get(key) || ''
+    let date = dayjs.utc(value)
+    if (!date.isValid()) return date
+    // Date-only bounds include the full selected bucket in the date bridge.
+    if (dateOnly.test(value)) {
+      date =
+        key === 'from'
+          ? date.startOf(timeBucket as OpUnitType)
+          : date.endOf(timeBucket as OpUnitType)
+    }
+    return dayjs.utc(date.tz(timezone).format('YYYY-MM-DD'))
+  })
+  return dates[1].diff(dates[0], 'day') + 1
+}
+
 export default function BusinessFunnelPresets({
   projectId,
 }: {
@@ -49,6 +82,15 @@ export default function BusinessFunnelPresets({
   retentionParams.delete('funnelId')
   retentionParams.set('tab', NOVIX_BUSINESS_TAB)
   retentionParams.set('novix_feature', 'all')
+  if (
+    !BUSINESS_FUNNEL_PERIODS.has(period) ||
+    (period === 'custom' &&
+      customRangeDays(searchParams, timezone, timeBucket) > 93)
+  ) {
+    retentionParams.set('period', '4w')
+    retentionParams.delete('from')
+    retentionParams.delete('to')
+  }
   for (const [key, value] of Object.entries(filters)) {
     if (value) retentionParams.set(`novix_${key}`, value)
   }

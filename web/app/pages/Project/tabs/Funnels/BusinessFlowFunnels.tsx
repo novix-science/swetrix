@@ -32,6 +32,11 @@ export default function BusinessFlowFunnels({
         const baseline =
           first.availability === 'unavailable' ? null : first.count
         const unit = l(`flowUnit_${path.unit}`)
+        const unavailableLabel = l(
+          path.coverage.limitations?.includes('compute_not_applicable')
+            ? 'flowComputeNotApplicable'
+            : 'flowStageRecordsInsufficient',
+        )
         const executionLabelKey =
           path.featureId === 'auto_discovery'
             ? 'flowStep_execution_discovery'
@@ -72,7 +77,7 @@ export default function BusinessFlowFunnels({
                   }
                   label={
                     path.availability === 'unavailable'
-                      ? l('flowStageRecordsInsufficient')
+                      ? unavailableLabel
                       : l(`metric_${path.availability}`)
                   }
                 />
@@ -166,7 +171,7 @@ export default function BusinessFlowFunnels({
                           </td>
                           <td className='px-3 py-3 whitespace-nowrap'>
                             {step.availability === 'unavailable'
-                              ? l('flowStageRecordsInsufficient')
+                              ? unavailableLabel
                               : l(`metric_${step.availability}`)}
                           </td>
                         </tr>
