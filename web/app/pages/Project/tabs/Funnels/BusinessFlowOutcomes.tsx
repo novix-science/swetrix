@@ -34,7 +34,9 @@ export default function BusinessFlowOutcomes({
                   {l(`flowOutcome_${status}`)}
                 </th>
                 <td className='px-3 py-2 text-right tabular-nums'>
-                  {known ? number.format(path.outcomes[status]) : l('unknown')}
+                  {known && path.outcomes[status] !== null
+                    ? number.format(path.outcomes[status])
+                    : l('unknown')}
                 </td>
               </tr>
             ))}

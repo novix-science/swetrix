@@ -131,6 +131,10 @@ test("the rendered report shows backend counts, calculation definitions and sour
   assert.match(html, /novix_live=1/);
   assert.match(html, /tab=funnels/);
   assert.doesNotMatch(html, /100%等待|85%.*会等待/);
+  const pastRange = model.reportRange(new Date(data.fetchedAt), new URLSearchParams("report_period=custom&report_from=2026-11-10&report_to=2026-11-11"));
+  const pastHtml = renderToStaticMarkup(React.createElement(MemoryRouter, null,
+    React.createElement(ReportContent, {data: {...data, traffic: model.validateTraffic(nativeTraffic(pastRange), pastRange)}, range: pastRange, refreshing: false, onRefresh() {}})));
+  assert.doesNotMatch(pastHtml, /今日截至本次取数|今日数据仍会增加/);
   data.product.flowFunnels.paths.push(...flowReport("auto_discovery").flowFunnels.paths);
   const proposalHtml = renderToStaticMarkup(
     React.createElement(

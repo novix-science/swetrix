@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 
 import BusinessFlowFunnels from './BusinessFlowFunnels'
+import OperationalFlowFunnels from './OperationalFlowFunnels'
 import { readFlowReport } from './report'
 import en from '../Business/en.json'
 import { ReportError } from '../Business/report'
@@ -245,6 +246,13 @@ export default function BusinessFunnelPresets({
               <BusinessFlowFunnels
                 key={query}
                 paths={readFlowFunnels(report.data, preset.id)}
+                labels={labels}
+                language={language}
+              />
+              <OperationalFlowFunnels
+                key={`operational-${query}`}
+                report={report.data}
+                feature={preset.id}
                 labels={labels}
                 language={language}
               />

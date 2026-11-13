@@ -8,10 +8,12 @@ export default function BusinessFlowFunnels({
   paths,
   labels,
   language,
+  showOutcomes = true,
 }: {
   paths: FlowFunnel[]
   labels: Labels
   language: string
+  showOutcomes?: boolean
 }) {
   const l = (key: string) => labels[key] || key
   const number = new Intl.NumberFormat(language, { maximumFractionDigits: 2 })
@@ -29,8 +31,7 @@ export default function BusinessFlowFunnels({
       {paths.map((path) => {
         const first = path.steps[0]
         const last = path.steps[path.steps.length - 1]
-        const baseline =
-          first.availability === 'unavailable' ? null : first.count
+        const baseline = first.availability === 'available' ? first.count : null
         const unit = l(`flowUnit_${path.unit}`)
         const unavailableLabel = l(
           path.coverage.limitations?.includes('compute_not_applicable')
@@ -66,7 +67,10 @@ export default function BusinessFlowFunnels({
                 <span className='mt-1 block text-xs text-gray-500 dark:text-gray-400'>
                   {l('flowObservedFromFirst')}{' '}
                   {rate(
-                    last.availability === 'unavailable' ? null : last.fromFirst,
+                    last.availability === 'available' &&
+                      first.availability === 'available'
+                      ? last.fromFirst
+                      : null,
                   )}
                 </span>
               </div>
@@ -91,6 +95,11 @@ export default function BusinessFlowFunnels({
               />
             </summary>
             <div className='border-t border-gray-100 p-4 dark:border-slate-800'>
+              {labels[`${path.labelKey}_definition`] ? (
+                <p className='mb-4 text-sm leading-relaxed text-gray-500 dark:text-gray-400'>
+                  {labels[`${path.labelKey}_definition`]}
+                </p>
+              ) : null}
               <div className='overflow-x-auto'>
                 <table className='w-full text-left text-sm'>
                   <caption className='sr-only'>{l(path.labelKey)}</caption>
@@ -115,14 +124,18 @@ export default function BusinessFlowFunnels({
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-gray-100 text-gray-800 dark:divide-slate-800/60 dark:text-gray-200'>
-                    {path.steps.map((step) => {
+                    {path.steps.map((step, index) => {
                       const known = step.availability !== 'unavailable'
+                      const complete = step.availability === 'available'
+                      const previous = path.steps[Math.max(0, index - 1)]
                       const value = known ? step.count : null
-                      const label = l(
-                        step.id === 'execution'
-                          ? executionLabelKey
-                          : `flowStep_${step.id}`,
-                      )
+                      const label =
+                        labels[`${path.labelKey}_step_${step.id}`] ||
+                        l(
+                          step.id === 'execution'
+                            ? executionLabelKey
+                            : `flowStep_${step.id}`,
+                        )
                       return (
                         <tr key={step.id}>
                           <th
@@ -137,7 +150,8 @@ export default function BusinessFlowFunnels({
                           <td className='min-w-32 px-3 py-3'>
                             {baseline !== null &&
                             baseline > 0 &&
-                            value !== null ? (
+                            value !== null &&
+                            complete ? (
                               <>
                                 <meter
                                   min={0}
@@ -164,10 +178,18 @@ export default function BusinessFlowFunnels({
                             ) : null}
                           </td>
                           <td className='px-3 py-3 tabular-nums'>
-                            {rate(known ? step.fromPrevious : null)}
+                            {rate(
+                              complete && previous.availability === 'available'
+                                ? step.fromPrevious
+                                : null,
+                            )}
                           </td>
                           <td className='px-3 py-3 tabular-nums'>
-                            {rate(known ? step.fromFirst : null)}
+                            {rate(
+                              complete && first.availability === 'available'
+                                ? step.fromFirst
+                                : null,
+                            )}
                           </td>
                           <td className='px-3 py-3 whitespace-nowrap'>
                             {step.availability === 'unavailable'
@@ -180,11 +202,13 @@ export default function BusinessFlowFunnels({
                   </tbody>
                 </table>
               </div>
-              <BusinessFlowOutcomes
-                path={path}
-                labels={labels}
-                language={language}
-              />
+              {showOutcomes ? (
+                <BusinessFlowOutcomes
+                  path={path}
+                  labels={labels}
+                  language={language}
+                />
+              ) : null}
               <div className='mt-4 space-y-2 text-xs leading-relaxed text-gray-500 dark:text-gray-400'>
                 {path.coverage.limitations?.map((limitation) => (
                   <p
@@ -200,7 +224,13 @@ export default function BusinessFlowFunnels({
                     {path.coverage.missingEvents.map((event, index) => (
                       <span key={event}>
                         {index ? ', ' : ''}
-                        <code>{event}</code>
+                        {labels[`flowMissingEvent_${event}`] ? (
+                          <span title={event}>
+                            {labels[`flowMissingEvent_${event}`]}
+                          </span>
+                        ) : (
+                          <code>{event}</code>
+                        )}
                       </span>
                     ))}
                   </p>

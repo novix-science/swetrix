@@ -1,6 +1,7 @@
 import { ReportError } from '../Business/report'
 import type { FlowFunnelReport } from '../Business/types'
 import { readFlowFunnels } from '~/utils/novixFunnels'
+import { readAutoRouting, readOperationalFlowFunnels } from './operational'
 
 export async function readFlowReport(
   path: string,
@@ -35,6 +36,8 @@ export async function readFlowReport(
     throw new ReportError(502, 'invalid_report')
   try {
     readFlowFunnels(report, feature)
+    readOperationalFlowFunnels(report, feature)
+    readAutoRouting(report, feature)
   } catch {
     throw new ReportError(502, 'invalid_report')
   }

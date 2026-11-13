@@ -3,6 +3,7 @@ import { createRequire } from 'node:module'
 import { test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { flowReport } from './fixtures/businessFlows.mjs'
+import { operationalReport } from './fixtures/operationalFlows.mjs'
 
 const require = createRequire(new URL('../web/package.json', import.meta.url))
 const { createServer } = await import(pathToFileURL(require.resolve('vite')).href)
@@ -188,4 +189,38 @@ test('a successful current report exposes six paths and a snapshot', async () =>
   assert.match(html, /987,654/)
   assert.match(html, /Snapshot/)
   assert.doesNotMatch(html, /Loading…|role="alert"/)
+})
+
+test('the Funnels menu adds the operational paths below the existing six business paths', async () => {
+  const html = await renderCase({ ...fixture(), ...operationalReport() })
+  assert.equal((html.match(/<details\b/g) || []).length, 9)
+  assert.match(html, /Operational document funnels/)
+  assert.match(html, /Input to submission/)
+  assert.match(html, /Checklist interaction to result/)
+  assert.match(html, /Auto mode distribution/)
+  assert.ok(html.indexOf('Operational document funnels') > html.indexOf('Auto → Loop'))
+  assert.equal((html.match(/aria-label="Outcome distribution"/g) || []).length, 6)
+})
+
+test('older cached responses explain unavailable operational data alongside their six existing funnels', async () => {
+  const html = await renderCase(fixture())
+  assert.equal((html.match(/<details\b/g) || []).length, 6)
+  assert.match(html, /The data service has not supplied these operational paths/)
+  assert.match(html, /Auto routing data is unavailable/)
+})
+
+test('operational metrics share the selected date and filter cache without leaking across queries', async () => {
+  const report = { ...fixture(), ...operationalReport() }
+  report.operationalFunnels.paths[0].steps[0].count = 13579
+  const cachedSearch = '?novixFunnel=deep_survey&period=custom&from=2026-11-01&to=2026-11-03&novix_computeType=cpu&novix_internalTraffic=external'
+  assert.match(await renderCase(report, {}, cachedSearch), /13,579/)
+  for (const search of [
+    cachedSearch.replace('novix_computeType=cpu', 'novix_computeType=gpu'),
+    cachedSearch.replace('novix_internalTraffic=external', 'novix_internalTraffic=all'),
+    cachedSearch.replace('to=2026-11-03', 'to=2026-11-04'),
+  ]) {
+    const html = await renderCase(report, {}, search, cachedSearch)
+    assert.match(html, /Loading…/)
+    assert.doesNotMatch(html, /13,579|Input to submission|Auto mode distribution/)
+  }
 })

@@ -3,6 +3,7 @@ import { createRequire } from 'node:module'
 import { test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { flowReport } from './fixtures/businessFlows.mjs'
+import { operationalReport } from './fixtures/operationalFlows.mjs'
 
 const require = createRequire(new URL('../web/package.json', import.meta.url))
 const { createServer } = await import(pathToFileURL(require.resolve('vite')).href)
@@ -36,6 +37,24 @@ test('a thin flow report loads without unrelated legacy product metrics', async 
   const result = await read()
   assert.equal(result.flowFunnels.paths.length, 6)
   assert.equal(result.flowFunnels.paths[0].steps[0].count, null)
+})
+
+test('the flow endpoint validates additive operational fields only when supplied', async t => {
+  const data = { ...fixture(), ...operationalReport() }
+  const mock = t.mock.method(globalThis, 'fetch', async () => Response.json(data))
+  assert.equal((await read()).operationalFunnels.paths.length, 3)
+  mock.mock.restore()
+  for (const mutate of [
+    report => { report.operationalFunnels = null },
+    report => { report.operationalFunnels.paths[0].steps.reverse() },
+    report => { report.autoRouting.accepted = 9 },
+  ]) {
+    const invalid = structuredClone(data)
+    mutate(invalid)
+    const response = t.mock.method(globalThis, 'fetch', async () => Response.json(invalid))
+    await assert.rejects(read, { status: 502, code: 'invalid_report' })
+    response.mock.restore()
+  }
 })
 
 test('flow report errors preserve HTTP status and backend error code', async t => {

@@ -302,6 +302,7 @@ export function ReportContent({
   const [selectedDay, setSelectedDay] = useState(range.end)
   const { traffic, journeys, product } = data
   const rows = traffic.rows
+  const currentDay = reportRange(new Date(data.fetchedAt)).end
   const pv = rows.reduce((total, row) => total + row.pageviews, 0)
   const axisIndices = [
     ...new Set(
@@ -439,7 +440,7 @@ export function ReportContent({
           {day.date === REPORT_COLLECTION_DAY
             ? ' · 接入当日从 18:35:12 起'
             : ''}
-          {day.date === range.end ? ' · 今日截至本次取数' : ''}
+          {day.date === currentDay ? ' · 今日截至本次取数' : ''}
         </p>
         <div className='nv-scope-strip'>
           <span aria-hidden>i</span>
@@ -448,7 +449,8 @@ export function ReportContent({
             与访问路径来自正式项目的原生页面记录，研究流程关联同范围的前端行为与后端任务事实。
             Loop 实际启动从 11 月 12 日、提案展示与决定从 11 月 13
             日开始有记录。
-            业务流程排除已识别内部账号，计算比例仍需核对身份与筛选范围。今日数据仍会增加。
+            业务流程排除已识别内部账号，计算比例仍需核对身份与筛选范围。
+            {range.end === currentDay ? '今日数据仍会增加。' : ''}
           </p>
           <a href={reportSourceLink(range, 'traffic')}>复查流量后台 ↗</a>
         </div>

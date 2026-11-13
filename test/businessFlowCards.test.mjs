@@ -33,7 +33,32 @@ const path = (id = 'task') => {
   item.steps[item.steps.length - 1] = { id: 'result', count: null, fromPrevious: null, fromFirst: null, availability: 'unavailable' }
   return item
 }
-const render = (paths, labels, language = 'en') => renderToStaticMarkup(React.createElement(BusinessFlowFunnels, { paths, labels, language }))
+const render = (paths, labels, language = 'en', options = {}) => renderToStaticMarkup(React.createElement(BusinessFlowFunnels, { paths, labels, language, ...options }))
+
+test('event-only operational paths can omit task outcomes and exit distributions', async () => {
+  const labels = await labelsFor('en')
+  const html = render([path()], labels, 'en', { showOutcomes: false })
+  assert.doesNotMatch(html, /Outcome distribution|Observed exit destinations/)
+  assert.match(html, /Feature reached/)
+})
+
+test('an unavailable individual outcome displays unknown instead of a zero count', async () => {
+  const labels = await labelsFor('en')
+  const item = path()
+  item.outcomes.failed = null
+  assert.match(render([item], labels), /Failed<\/th><td[^>]*>Unknown<\/td>/)
+})
+
+test('partial stage counts remain visible while partial-denominator rates and bars stay unknown', async () => {
+  const labels = await labelsFor('en')
+  const item = path()
+  item.steps[0] = { id: 'home', count: 20, fromPrevious: .7654, fromFirst: .7654, availability: 'partial' }
+  item.steps[1] = { id: 'entry', count: 10, fromPrevious: .7654, fromFirst: .7654, availability: 'available' }
+  const html = render([item], labels)
+  assert.match(html, /<td[^>]*>20<\/td>/)
+  assert.match(html, /<td[^>]*>10<\/td>/)
+  assert.doesNotMatch(html, /76\.54%|<meter\b/)
+})
 
 test('each research path has an independently expandable funnel with its own title and unit', async () => {
   const labels = await labelsFor('en')

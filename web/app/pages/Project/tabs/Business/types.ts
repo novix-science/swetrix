@@ -17,12 +17,12 @@ export interface FlowFunnel {
     limitations?: string[]
   }
   outcomes: {
-    failed: number
-    cancelled: number
-    timedOut: number
-    blocked: number
-    unconfirmed: number
-    decisionFailed: number
+    failed: Metric
+    cancelled: Metric
+    timedOut: Metric
+    blocked: Metric
+    unconfirmed: Metric
+    decisionFailed: Metric
   }
   exits: { route: string; count: number }[]
   steps: {
@@ -41,6 +41,22 @@ export interface FlowFunnelReport {
   snapshotAt: string
   resolvedRange: BusinessRange
   flowFunnels: { version: 1; paths: FlowFunnel[] }
+  operationalFunnels?: { version: 1; paths: FlowFunnel[] }
+  autoRouting?: AutoRouting
+}
+
+export interface AutoRouting {
+  version: 1
+  featureId: string
+  unit: 'operations'
+  requestedMode: 'auto'
+  totalSubmitted: Metric
+  accepted: Metric
+  resolved: { task: Metric; discuss: Metric; deep: Metric }
+  unresolved: Metric
+  excluded: number
+  availability: FlowAvailability
+  coverage: { missingEvents: string[] }
 }
 
 export interface Rate {
