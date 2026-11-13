@@ -27,6 +27,8 @@ import type {
   ResourceOverview,
 } from './types'
 import zh from './zh.json'
+import ReportDashboard from './ReportDashboard/ReportDashboard'
+import { UNIFIED_PROJECT } from '../Traffic/unifiedRange'
 
 const supportedPeriods = new Set([
   '1h',
@@ -178,7 +180,7 @@ function FiltersForm({
   )
 }
 
-export default function BusinessView({ projectId }: { projectId: string }) {
+function BusinessMetricsView({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient()
   const { i18n } = useTranslation('common')
   const language = (i18n.resolvedLanguage || i18n.language).startsWith('zh')
@@ -339,5 +341,49 @@ export default function BusinessView({ projectId }: { projectId: string }) {
         ) : null}
       </div>
     </div>
+  )
+}
+
+export default function BusinessView({ projectId }: { projectId: string }) {
+  const [params, setParams] = useSearchParams()
+  const { i18n } = useTranslation('common')
+  const zh = (i18n.resolvedLanguage || i18n.language).startsWith('zh')
+  const report =
+    projectId === UNIFIED_PROJECT && params.get('novix_view') === 'report'
+  const select = (value: string) => {
+    const next = new URLSearchParams(params)
+    if (value === 'report') next.set('novix_view', 'report')
+    else next.delete('novix_view')
+    setParams(next)
+  }
+  return (
+    <>
+      {projectId === UNIFIED_PROJECT ? (
+        <div
+          className='mb-5 flex gap-2'
+          aria-label={zh ? '业务分析视图' : 'Business analytics views'}
+        >
+          <Button
+            variant={report ? 'ghost' : 'secondary'}
+            aria-pressed={!report}
+            onClick={() => select('metrics')}
+          >
+            {zh ? '业务指标' : 'Business metrics'}
+          </Button>
+          <Button
+            variant={report ? 'secondary' : 'ghost'}
+            aria-pressed={report}
+            onClick={() => select('report')}
+          >
+            {zh ? '近 30 天汇报看板' : '30-day report (Chinese)'}
+          </Button>
+        </div>
+      ) : null}
+      {report ? (
+        <ReportDashboard />
+      ) : (
+        <BusinessMetricsView projectId={projectId} />
+      )}
+    </>
   )
 }
