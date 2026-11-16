@@ -33,6 +33,7 @@ import { BUSINESS_FUNNEL_PERIODS, getNovixFunnel } from '~/utils/novixFunnels'
 import { SessionsDrawer } from '../Traffic/SessionsDrawer'
 import FunnelEmptyStateAction from './FunnelEmptyStateAction'
 import BusinessFunnelPresets from './BusinessFunnelPresets'
+import TrafficFlowOverview from './TrafficFlowOverview'
 
 interface FunnelsViewProps {
   tnMapping: Record<string, string>
@@ -53,8 +54,7 @@ const FunnelsView = ({
     useViewProjectContext()
   const { t } = useTranslation('common')
   const [searchParams, setSearchParams] = useSearchParams()
-  const businessActive =
-    businessEnabled && Boolean(getNovixFunnel(searchParams))
+  const businessActive = businessEnabled && !searchParams.get('funnelId')
   const queryClient = useQueryClient()
   const fetcher = useFetcher<ProjectViewActionData>()
   const lastHandledData = useRef<ProjectViewActionData | null>(null)
@@ -279,7 +279,10 @@ const FunnelsView = ({
         <Filters className='mb-3' tnMapping={tnMapping} />
       ) : null}
 
-      {businessEnabled ? <BusinessFunnelPresets projectId={id} /> : null}
+      {businessActive ? <TrafficFlowOverview projectId={id} /> : null}
+      {businessEnabled && getNovixFunnel(searchParams) ? (
+        <BusinessFunnelPresets projectId={id} />
+      ) : null}
 
       {hasFunnels ? (
         <FunnelsList
@@ -296,35 +299,43 @@ const FunnelsView = ({
           allowedToManage={allowedToManage}
         />
       ) : (
-        <div className='mx-auto w-full max-w-2xl py-16 text-center'>
-          <div className='mx-auto mb-6 flex size-14 items-center justify-center rounded-xl bg-gray-100 dark:bg-slate-900'>
-            <FunnelIcon className='size-7 text-gray-700 dark:text-gray-200' />
-          </div>
-          <Text as='h3' size='xl' weight='medium' className='tracking-tight'>
-            {t('dashboard.funnels')}
-          </Text>
-          <Text
-            as='p'
-            size='sm'
-            colour='secondary'
-            className='mx-auto mt-2 max-w-md whitespace-pre-wrap'
-          >
-            <Trans
-              t={t}
-              i18nKey='dashboard.funnelsDesc'
-              components={{
-                docs: (
-                  <a
-                    href={FUNNELS_DOCS_URL}
-                    aria-label={t('ariaLabels.openFunnelsGuide')}
-                    className='font-medium underline decoration-dashed hover:decoration-solid'
-                    target='_blank'
-                    rel='noreferrer noopener'
-                  />
-                ),
-              }}
-            />
-          </Text>
+        <div
+          className={`mx-auto w-full max-w-2xl text-center ${businessEnabled ? 'py-4' : 'py-16'}`}
+        >
+          {!businessEnabled ? (
+            <div className='mx-auto mb-6 flex size-14 items-center justify-center rounded-xl bg-gray-100 dark:bg-slate-900'>
+              <FunnelIcon className='size-7 text-gray-700 dark:text-gray-200' />
+            </div>
+          ) : null}
+          {!businessEnabled ? (
+            <Text as='h3' size='xl' weight='medium' className='tracking-tight'>
+              {t('dashboard.funnels')}
+            </Text>
+          ) : null}
+          {!businessEnabled ? (
+            <Text
+              as='p'
+              size='sm'
+              colour='secondary'
+              className='mx-auto mt-2 max-w-md whitespace-pre-wrap'
+            >
+              <Trans
+                t={t}
+                i18nKey='dashboard.funnelsDesc'
+                components={{
+                  docs: (
+                    <a
+                      href={FUNNELS_DOCS_URL}
+                      aria-label={t('ariaLabels.openFunnelsGuide')}
+                      className='font-medium underline decoration-dashed hover:decoration-solid'
+                      target='_blank'
+                      rel='noreferrer noopener'
+                    />
+                  ),
+                }}
+              />
+            </Text>
+          ) : null}
           <div className='mt-6'>
             <FunnelEmptyStateAction
               isAuthenticated={isAuthenticated}

@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { FunnelIcon } from '@phosphor-icons/react'
 import dayjs, { type OpUnitType } from 'dayjs'
 import timezonePlugin from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
@@ -20,13 +19,11 @@ import Select from '~/ui/Select'
 import { NOVIX_BUSINESS_TAB } from '~/utils/novixAnalytics'
 import {
   BUSINESS_FUNNEL_PERIODS,
-  NOVIX_FUNNEL_PRESETS,
   FUNNEL_FILTER_OPTIONS,
   businessFunnelQuery,
   getNovixFunnel,
   readFlowFunnels,
   readFunnelFilters,
-  selectNovixFunnel,
   updateFunnelFilter,
 } from '~/utils/novixFunnels'
 
@@ -148,27 +145,6 @@ export default function BusinessFunnelPresets({
       <p className='mb-4 text-sm leading-relaxed text-gray-500 dark:text-gray-400'>
         {l('presetFunnelsHint')}
       </p>
-      <div className='grid gap-2 sm:grid-cols-2 xl:grid-cols-4'>
-        {NOVIX_FUNNEL_PRESETS.map((item) => (
-          <button
-            key={item.id}
-            type='button'
-            aria-expanded={preset?.id === item.id}
-            aria-controls={
-              preset?.id === item.id
-                ? 'novix-business-funnel-details'
-                : undefined
-            }
-            onClick={() =>
-              setSearchParams(selectNovixFunnel(searchParams, item.id, period))
-            }
-            className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:outline-hidden dark:hover:bg-slate-900 ${preset?.id === item.id ? 'border-teal-500 bg-teal-50 text-teal-800 dark:bg-teal-500/10 dark:text-teal-200' : 'border-gray-200 bg-white text-gray-800 dark:border-slate-800 dark:bg-slate-950 dark:text-gray-100'}`}
-          >
-            <FunnelIcon className='size-4 shrink-0 text-teal-500' aria-hidden />
-            {item.label}
-          </button>
-        ))}
-      </div>
       {preset ? (
         <div id='novix-business-funnel-details' className='mt-4'>
           <h3 className='mb-2 text-base font-semibold text-gray-900 dark:text-gray-50'>
