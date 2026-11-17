@@ -16,6 +16,8 @@ test('total flow starts at native UV, shows PV separately and reconciles 50/80 a
   assert.deepEqual(buttons, ['最近 7 天', '最近 14 天', '最近 30 天'])
   assert.match(html, /未记录到后续提交/)
   assert.match(html, /默认曝光不算主动选择/)
+  assert.match(html, /psid 访客标识去重/)
+  assert.match(html, /不能直接与本图 UV 比较/)
   assert.match(html, /其余配置尚未完整采集/)
   assert.doesNotMatch(html, /缺少本次行为事件的访客 · 其余配置/)
 })

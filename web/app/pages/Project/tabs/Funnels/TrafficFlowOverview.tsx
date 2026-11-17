@@ -35,7 +35,7 @@ const copy = {
     total: '占总访问',
     source: '来源：Swetrix 原生采集 · 全部访客，包含匿名访问',
     identity:
-      'UV 沿用 Swetrix 访客标识，并非跨日期、跨设备去重的自然人数。每个访客在同层只归入首次有记录的分支；后续切换不重复计数。',
+      '本图 UV 按 Swetrix 的 psid 访客标识去重，并非跨日期、跨设备去重的自然人数。原生流量页的“访客”和“用户”使用不同标识，不能直接与本图 UV 比较。每个访客在同层只归入首次有记录的分支；后续切换不重复计数。',
     gaps: '没有后续记录保留为独立分支，可能是未操作或缺少采集记录，不直接判定为流失。默认曝光不算主动选择，CPU/GPU 使用提交时的配置。',
     missing:
       '完整表单配置和 tag 尚未全部采集，当前只展开已有字段，缺失项保留说明。',
@@ -78,7 +78,7 @@ const copy = {
     source:
       'Source: native Swetrix collection · All visitors, including anonymous visits',
     identity:
-      'UV uses the Swetrix visitor key, not unique people across dates or devices. Each visitor belongs to their first recorded branch at each level; later switches are not counted again.',
+      'This chart counts distinct Swetrix psid visitor keys, not unique people across dates or devices. The native Traffic page uses different keys for Visitors and Users, so those counts are not directly comparable to this UV. Each visitor belongs to their first recorded branch at each level; later switches are not counted again.',
     gaps: 'Missing follow-up records remain separate: an action may not have happened or may not have been collected. Passive exposure is not a choice. CPU/GPU uses the submitted setting.',
     missing:
       'Complete form configurations and tags are not yet collected. Only recorded dimensions are expanded.',
