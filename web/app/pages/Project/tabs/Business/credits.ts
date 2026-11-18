@@ -19,6 +19,8 @@ export interface CreditsReport {
     exhaustedAccounts: number
     credits: number
     distribution: number[]
+    // Included in the row above; plans granted as gift or manual grant (mostly internal accounts).
+    gifted: CreditsUsageCounts | null
   }[]
   funnel: {
     paidAccounts: number
@@ -26,6 +28,14 @@ export interface CreditsReport {
     steps: (CreditsStage & { id: string })[]
     failed: CreditsStage
   }
+}
+
+export interface CreditsUsageCounts {
+  accounts: number
+  consumingAccounts: number
+  exhaustedAccounts: number
+  credits: number
+  distribution: number[]
 }
 
 export interface CreditsStage {

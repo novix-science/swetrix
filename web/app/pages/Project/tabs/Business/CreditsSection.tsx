@@ -15,6 +15,7 @@ import {
   withCreditsRange,
   type CreditsReport,
   type CreditsStage,
+  type CreditsUsageCounts,
 } from './credits'
 
 const tiers = new Map([
@@ -41,6 +42,8 @@ const copy = {
     exhaustedAccounts: '余额归零账户数',
     usageBands: '每账户用量分布 (按 credits 分组)',
     usageHelp: '按额度周期和扣费时的套餐统计。同一账户当月换档后可出现在多个套餐。各月只统计选中日期。',
+    gifted: '其中赠送',
+    giftedHelp: '「其中赠送」是赠送或手动开通的套餐，多为内部账号，已计入上一行。',
     production: '正式环境 · 非内部账户',
     staging: '测试环境 · 所有账户',
     snapshot: '数据快照',
@@ -72,7 +75,7 @@ const copy = {
     },
     firstObserved: '范围内最早记录',
     failed: '已观测到发起失败',
-    upgradeHelp: '每个阶段按账号去重。支付与生效统计 Stripe 同订阅升档。跨阶段记录尚不完整，转化率暂不可计算。',
+    upgradeHelp: '每个阶段按账号去重。漏斗只统计购买的套餐（月订阅、一次性购买），不含赠送和手动开通。支付与生效统计 Stripe 同订阅升档。跨阶段记录尚不完整，转化率暂不可计算。',
     loading: '正在查询额度与升档',
     error: '额度与升档数据暂不可用。',
     retry: '重试',
@@ -93,6 +96,8 @@ const copy = {
     exhaustedAccounts: 'Reached zero',
     usageBands: 'Account distribution by credits used',
     usageHelp: 'Usage follows the credit cycle and plan at the time of the debit. An account that switches plans can appear in multiple rows. Months include selected dates only.',
+    gifted: 'Of which gifted',
+    giftedHelp: '"Of which gifted" covers plans granted as gifts or manually, mostly internal accounts, and is included in the row above.',
     production: 'Production · External accounts',
     staging: 'Staging · All accounts',
     snapshot: 'Data snapshot',
@@ -124,7 +129,7 @@ const copy = {
     },
     firstObserved: 'First observed in range',
     failed: 'Observed start failures',
-    upgradeHelp: 'Account counts are deduplicated within each stage. Payments and activations cover Stripe upgrades on the same subscription. Conversion rates require complete links across stages.',
+    upgradeHelp: 'Account counts are deduplicated within each stage. The funnel only covers purchased plans (monthly or one-time), not gifted or manually granted ones. Payments and activations cover Stripe upgrades on the same subscription. Conversion rates require complete links across stages.',
     loading: 'Loading credit usage and upgrades',
     error: 'Credit and upgrade data is unavailable.',
     retry: 'Retry',
@@ -134,6 +139,8 @@ type Language = keyof typeof copy
 type Messages = (typeof copy)[Language]
 
 const cell = 'px-3 py-3 whitespace-nowrap'
+// Gifted sub-rows sit tight under their plan row, in smaller muted type.
+const giftedCell = 'px-3 pb-3 text-xs whitespace-nowrap'
 const muted = 'text-xs leading-relaxed text-gray-500 dark:text-gray-400'
 const selectClass = 'rounded-md border border-gray-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900'
 
@@ -188,6 +195,7 @@ export function CreditsUsage({ report, start, end, language }: {
     <>
       <h3 className='mt-5 mb-2 text-base font-semibold'>{l.usage}</h3>
       <p className={muted}>{l.usageHelp}</p>
+      {report.monthlyUsage.some((row) => row.gifted) ? <p className={muted}>{l.giftedHelp}</p> : null}
       <div className='mt-3 overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700'>
         <table className='w-full text-left text-sm' aria-label={l.usage}>
           <thead className='bg-gray-50 dark:bg-slate-900/70'>
@@ -202,20 +210,29 @@ export function CreditsUsage({ report, start, end, language }: {
           <tbody>
             {monthKeys(start, end).flatMap((month) => {
               const planKeys = values.has(`${month}/unknown`) ? [...tiers.keys(), 'unknown'] : [...tiers.keys()]
-              return planKeys.map((tier, index) => {
+              const lines = planKeys.flatMap((tier) => {
                 const data = values.get(`${month}/${tier}`)
+                return data?.gifted ? [{ tier, data, gifted: false }, { tier, data, gifted: true }] : [{ tier, data, gifted: false }]
+              })
+              return lines.map(({ tier, data, gifted }, index) => {
+                const counts: CreditsUsageCounts | undefined = gifted ? data?.gifted ?? undefined : data
                 return (
-                  <tr key={`${month}/${tier}`} className='border-t border-gray-100 dark:border-slate-800'>
-                    {index === 0 ? <th scope='rowgroup' rowSpan={planKeys.length} className={cell}>{month}</th> : null}
-                    <th scope='row' className={cell}>{tiers.get(tier) || l.unknownTier}</th>
+                  <tr
+                    key={`${month}/${tier}${gifted ? '/gifted' : ''}`}
+                    className={gifted ? 'text-gray-500 dark:text-gray-400' : 'border-t border-gray-100 dark:border-slate-800'}
+                  >
+                    {index === 0 ? <th scope='rowgroup' rowSpan={lines.length} className={cell}>{month}</th> : null}
+                    <th scope='row' className={gifted ? `${giftedCell} font-normal` : cell}>
+                      {gifted ? `└ ${l.gifted}` : tiers.get(tier) || l.unknownTier}
+                    </th>
                     {[
-                      data?.accounts ?? 0,
-                      data?.consumingAccounts ?? 0,
-                      data?.credits ?? 0,
-                      data?.exhaustedAccounts ?? 0,
-                      ...(data?.distribution ?? Array(bands.length).fill(0)),
+                      counts?.accounts ?? 0,
+                      counts?.consumingAccounts ?? 0,
+                      counts?.credits ?? 0,
+                      counts?.exhaustedAccounts ?? 0,
+                      ...(counts?.distribution ?? Array(bands.length).fill(0)),
                     ].map((value, column) => (
-                      <td key={column} className={`${cell} tabular-nums`}>{number.format(value)}</td>
+                      <td key={column} className={`${gifted ? giftedCell : cell} tabular-nums`}>{number.format(value)}</td>
                     ))}
                   </tr>
                 )
