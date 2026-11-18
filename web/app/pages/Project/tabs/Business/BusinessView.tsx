@@ -18,6 +18,7 @@ import {
 } from '~/utils/novixAnalytics'
 
 import { ProductSections, ResourceSections } from './BusinessSections'
+import CreditsSection from './CreditsSection'
 import en from './en.json'
 import { readReport, ReportError } from './report'
 import type {
@@ -271,6 +272,9 @@ function BusinessMetricsView({ projectId }: { projectId: string }) {
                 {l(report.environment)}
               </span>
             ) : null}
+            <a className='text-sm text-indigo-700 underline-offset-4 hover:underline dark:text-indigo-300' href='#novix-credits'>
+              {language === 'zh' ? '额度与升档' : 'Credits and upgrades'}
+            </a>
           </div>
         }
       />
@@ -340,6 +344,7 @@ function BusinessMetricsView({ projectId }: { projectId: string }) {
           />
         ) : null}
       </div>
+      <CreditsSection projectId={projectId} language={language} />
     </div>
   )
 }
